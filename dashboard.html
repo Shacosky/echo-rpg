@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ECHO RPG — Dashboard</title>
+<style>
+:root{--gold:#ffd36a;--green:#66ff9a;--purple:#c8b7ff;--bg:#02030a;--panel:rgba(10,12,28,.98);--border:rgba(255,211,106,.25);--text:#f0f0f0;--muted:#b0b8c8;--dim:#707888;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Courier New',monospace;}
+body{display:flex;flex-direction:column;align-items:center;padding:24px 16px 60px;}
+header{width:min(900px,100%);display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+header h1{font-size:18px;color:var(--gold);letter-spacing:3px;}
+header nav a{color:var(--muted);font-size:11px;letter-spacing:1px;text-decoration:none;margin-left:16px;}
+header nav a:hover{color:var(--gold);}
+.wrap{width:min(900px,100%);display:grid;gap:18px;grid-template-columns:1fr 1.4fr;}
+@media(max-width:720px){.wrap{grid-template-columns:1fr;}}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:18px 20px;}
+.card h2{font-size:12px;color:var(--purple);letter-spacing:3px;text-transform:uppercase;margin-bottom:14px;}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.stat-item{background:#060612;border:1px solid #0e0e1e;border-radius:4px;padding:8px 10px;}
+.stat-item .sn{font-size:9px;color:var(--dim);display:block;letter-spacing:1px;text-transform:uppercase;}
+.stat-item .sv{font-size:18px;color:var(--gold);}
+#alias{font-size:20px;color:var(--gold);margin-bottom:4px;}
+#alias-note{font-size:10px;color:var(--dim);margin-bottom:16px;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{text-align:left;color:var(--dim);font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:6px 8px;border-bottom:1px solid var(--border);}
+td{padding:7px 8px;border-bottom:1px solid #14142a;color:var(--muted);}
+tr.me td{color:var(--gold);}
+.rank{color:var(--dim);width:24px;}
+.btn{display:inline-block;margin-top:16px;padding:10px 16px;background:#0e0e1e;border:1px solid rgba(255,211,106,.5);color:var(--gold);font-family:'Courier New',monospace;font-size:11px;letter-spacing:1px;border-radius:3px;cursor:pointer;text-decoration:none;}
+.btn:hover{background:rgba(255,211,106,.1);color:#fff;}
+#login-box{width:min(380px,100%);margin:60px auto;text-align:center;}
+#login-box input{width:100%;background:#060614;border:1px solid rgba(255,211,106,.3);color:#fff;padding:10px;border-radius:3px;font-family:'Courier New',monospace;font-size:14px;margin-bottom:10px;}
+#login-msg{font-size:11px;color:#ff6b6b;min-height:16px;margin-bottom:8px;}
+#dash{display:none;}
+</style>
+</head>
+<body>
+
+<div id="login-box">
+  <h1 style="color:var(--gold);letter-spacing:3px;margin-bottom:10px;">⚔ MI DASHBOARD</h1>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:18px;">Inicia sesión para ver tu perfil y el ranking.</p>
+  <input id="l-user" placeholder="tester@echo.local">
+  <input id="l-pass" type="password" placeholder="password">
+  <div id="login-msg"></div>
+  <button class="btn" id="l-submit">▶ ENTRAR</button>
+  <p style="margin-top:14px;"><a href="game.html" style="color:var(--dim);font-size:11px;">¿No tienes cuenta? Regístrate desde el juego →</a></p>
+</div>
+
+<div id="dash">
+  <header>
+    <h1>⚔ MI DASHBOARD</h1>
+    <nav>
+      <a href="index.html">Inicio</a>
+      <a href="game.html">Jugar</a>
+      <a href="#" id="logout">Cerrar sesión</a>
+    </nav>
+  </header>
+  <div class="wrap">
+    <div class="card">
+      <h2>Perfil</h2>
+      <div id="alias">—</div>
+      <div id="alias-note">Estadísticas guardadas en la nube</div>
+      <div class="stat-grid">
+        <div class="stat-item"><span class="sn">Nivel</span><span class="sv" id="p-level">—</span></div>
+        <div class="stat-item"><span class="sn">Honor</span><span class="sv" id="p-honor">—</span></div>
+        <div class="stat-item"><span class="sn">🪙 Monedas</span><span class="sv" id="p-coins">—</span></div>
+        <div class="stat-item"><span class="sn">Carreras ganadas</span><span class="sv" id="p-wins">—</span></div>
+      </div>
+      <a class="btn" href="game.html">▶ Continuar partida</a>
+    </div>
+    <div class="card">
+      <h2>Leaderboard — Top 10 por honor</h2>
+      <table>
+        <thead><tr><th></th><th>Jugador</th><th>Nivel</th><th>Honor</th></tr></thead>
+        <tbody id="lb-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script>
+async function init(){
+  const session=await sbGetSession();
+  if(!session){
+    document.getElementById('login-box').style.display='block';
+    return;
+  }
+  document.getElementById('login-box').style.display='none';
+  document.getElementById('dash').style.display='block';
+  await loadDashboard(session.user.id);
+}
+
+async function loadDashboard(userId){
+  const profile=await fetchProfile(userId);
+  document.getElementById('alias').textContent=profile?.alias||'Jugador';
+  document.getElementById('p-level').textContent=profile?.level??1;
+  document.getElementById('p-honor').textContent=profile?.honor??0;
+  document.getElementById('p-coins').textContent=profile?.coins??0;
+  document.getElementById('p-wins').textContent=profile?.race_wins??0;
+
+  const lb=await fetchLeaderboard(10);
+  const body=document.getElementById('lb-body');
+  body.innerHTML=lb.map((row,i)=>`
+    <tr class="${row.alias===profile?.alias?'me':''}">
+      <td class="rank">${i+1}</td>
+      <td>${row.alias}</td>
+      <td>${row.level}</td>
+      <td>${row.honor}</td>
+    </tr>
+  `).join('')||'<tr><td colspan="4" style="color:var(--dim)">Todavía no hay jugadores en el ranking.</td></tr>';
+}
+
+document.getElementById('l-submit').addEventListener('click',async()=>{
+  const email=document.getElementById('l-user').value.trim().toLowerCase();
+  const pass=document.getElementById('l-pass').value;
+  const msg=document.getElementById('login-msg');
+  if(!email||!pass){msg.textContent='Completa usuario y password.';return;}
+  msg.textContent='Verificando...';
+  const{error}=await sbSignIn(email,pass);
+  if(error){msg.textContent=error.message==='Invalid login credentials'?'Usuario o password incorrecto.':error.message;return;}
+  location.reload();
+});
+
+document.getElementById('logout')?.addEventListener('click',async(e)=>{
+  e.preventDefault();
+  await sbSignOut();
+  location.reload();
+});
+
+init();
+</script>
+</body>
+</html>
