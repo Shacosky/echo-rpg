@@ -315,12 +315,16 @@ body.mobile.portrait.playing #rotate-lock{display:flex;}
 
 /* Controles táctiles */
 #mobile-controls{display:none;position:fixed;inset:0;z-index:780;pointer-events:none;font-family:'Courier New',monospace;}
-.mobile-pad,.mobile-actions{position:absolute;bottom:calc(16px + env(safe-area-inset-bottom));pointer-events:all;}
-.mobile-pad{left:calc(12px + env(safe-area-inset-left));width:150px;height:150px;display:grid;grid-template-columns:50px 50px 50px;grid-template-rows:50px 50px 50px;gap:0;opacity:.92;}
-.mobile-pad button,.mobile-actions button{background:rgba(6,6,18,.82);border:1px solid rgba(255,211,106,.4);color:var(--gold);border-radius:8px;font-family:'Courier New',monospace;font-weight:900;touch-action:none;}
-.mobile-pad button{font-size:19px;}
-.mobile-pad button:active,.mobile-actions button:active{background:rgba(255,211,106,.2);transform:scale(.95);}
-#m-up{grid-column:2;grid-row:1;}#m-left{grid-column:1;grid-row:2;}#m-down{grid-column:2;grid-row:3;}#m-right{grid-column:3;grid-row:2;}
+.mobile-actions{position:absolute;bottom:calc(16px + env(safe-area-inset-bottom));pointer-events:all;}
+.mobile-actions button{background:rgba(6,6,18,.82);border:1px solid rgba(255,211,106,.4);color:var(--gold);border-radius:8px;font-family:'Courier New',monospace;font-weight:900;touch-action:none;}
+.mobile-actions button:active{background:rgba(255,211,106,.2);transform:scale(.95);}
+/* Joystick analógico dinámico: zona táctil izquierda-inferior + base/knob que aparecen al tocar */
+#m-joy-zone{position:absolute;left:0;bottom:0;width:46%;height:78%;pointer-events:all;touch-action:none;}
+#m-joy{position:absolute;width:130px;height:130px;margin:-65px 0 0 -65px;border-radius:50%;
+  border:2px solid rgba(255,211,106,.35);background:rgba(6,6,18,.4);display:none;pointer-events:none;z-index:1;}
+#m-joy.on{display:block;}
+#m-joy-knob{position:absolute;left:38px;top:38px;width:54px;height:54px;border-radius:50%;
+  background:rgba(255,211,106,.5);border:1px solid var(--gold);box-shadow:0 0 12px rgba(255,211,106,.4);}
 .mobile-actions{right:calc(12px + env(safe-area-inset-right));display:grid;grid-template-columns:58px 58px 58px;grid-template-rows:56px 56px;gap:8px;opacity:.94;}
 .mobile-actions button{font-size:10px;letter-spacing:.5px;padding:3px;line-height:1.25;}
 .mobile-actions .big{font-size:19px;}
@@ -629,12 +633,8 @@ body.mobile #narrator-area{width:auto;}
 <div id="m-scrim"></div>
 
 <div id="mobile-controls" aria-hidden="true">
-  <div class="mobile-pad">
-    <button id="m-up" data-key="KeyW">▲</button>
-    <button id="m-left" data-key="KeyA">◀</button>
-    <button id="m-right" data-key="KeyD">▶</button>
-    <button id="m-down" data-key="KeyS">▼</button>
-  </div>
+  <div id="m-joy-zone"></div>
+  <div id="m-joy"><div id="m-joy-knob"></div></div>
   <div class="mobile-actions">
     <button class="big" data-action="attack">⚔<br>ATK</button>
     <button data-action="heal">💚<br>HP</button>
@@ -1150,6 +1150,7 @@ function floatText(x,y,text,color='#fff'){floats.push({x,y,text,color,life:1,vy:
 
 const cam={x:0,y:0};
 const keys={};
+const joy={active:false,x:0,y:0,id:null,cx:0,cy:0}; // joystick analógico móvil
 let invOpen=false,shopOpen=false,dialogOpen=false,gamePaused=false,gameStarted=false;
 
 // ── ZONES ──────────────────────────────────────────
@@ -1662,6 +1663,7 @@ function update(){
   if(keys['KeyS']||keys['ArrowDown']){dy=1;player.dir='down';}
   if(keys['KeyA']||keys['ArrowLeft']){dx=-1;player.dir='left';}
   if(keys['KeyD']||keys['ArrowRight']){dx=1;player.dir='right';}
+  if(joy.active&&(joy.x||joy.y)){dx=joy.x;dy=joy.y;if(Math.abs(dx)>Math.abs(dy))player.dir=dx>0?'right':'left';else player.dir=dy>0?'down':'up';}
   if(player.tx!==null&&dx===0&&dy===0){const cdx=player.tx-player.wx,cdy=player.ty-player.wy,dist=Math.hypot(cdx,cdy);if(dist>4){dx=cdx/dist;dy=cdy/dist;if(Math.abs(cdx)>Math.abs(cdy))player.dir=cdx>0?'right':'left';else player.dir=cdy>0?'down':'up';}else{player.tx=null;player.ty=null;}}
   const spd=(player.spd*0.6)*(keys['ShiftLeft']?1.5:1);
   player.moving=dx!==0||dy!==0;
@@ -1717,7 +1719,20 @@ setInterval(updateHeader,10000);
 function setupMobile(){
   const ctrl=document.getElementById('mobile-controls');if(!ctrl||ctrl.dataset.ready)return;ctrl.dataset.ready='1';
   document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
-  ctrl.querySelectorAll('[data-key]').forEach(btn=>{const code=btn.dataset.key;btn.addEventListener('pointerdown',e=>{e.preventDefault();keys[code]=true;player.tx=null;player.ty=null;});['pointerup','pointercancel','pointerleave'].forEach(ev=>btn.addEventListener(ev,e=>{e.preventDefault();keys[code]=false;}));});
+  // Joystick analógico dinámico (zona izquierda-inferior)
+  const joyZone=document.getElementById('m-joy-zone'),joyEl=document.getElementById('m-joy'),joyKnob=document.getElementById('m-joy-knob');
+  const JOY_R=52,JOY_DEAD=0.16;
+  if(joyZone){
+    joyZone.addEventListener('pointerdown',e=>{e.preventDefault();joy.active=true;joy.id=e.pointerId;joy.cx=e.clientX;joy.cy=e.clientY;joy.x=0;joy.y=0;
+      joyEl.style.left=e.clientX+'px';joyEl.style.top=e.clientY+'px';joyEl.classList.add('on');joyKnob.style.transform='translate(0,0)';
+      player.tx=null;player.ty=null;try{joyZone.setPointerCapture(e.pointerId);}catch(_){}});
+    joyZone.addEventListener('pointermove',e=>{if(!joy.active||e.pointerId!==joy.id)return;e.preventDefault();
+      let vx=e.clientX-joy.cx,vy=e.clientY-joy.cy;const d=Math.hypot(vx,vy)||1;const cl=Math.min(d,JOY_R);const nx=vx/d,ny=vy/d;
+      joyKnob.style.transform=`translate(${nx*cl}px,${ny*cl}px)`;const mag=cl/JOY_R;
+      if(mag<JOY_DEAD){joy.x=0;joy.y=0;}else{joy.x=nx*mag;joy.y=ny*mag;}});
+    const joyEnd=e=>{if(joy.id!==null&&e.pointerId!==joy.id)return;joy.active=false;joy.x=0;joy.y=0;joy.id=null;joyEl.classList.remove('on');};
+    ['pointerup','pointercancel','pointerleave'].forEach(ev=>joyZone.addEventListener(ev,joyEnd));
+  }
   ctrl.querySelectorAll('[data-action]').forEach(btn=>{btn.addEventListener('pointerdown',e=>{e.preventDefault();const a=btn.dataset.action;if(a==='attack'){const t=enemies.filter(e=>!e.dead).sort((a,b)=>Math.hypot(a.wx-player.wx,a.wy-player.wy)-Math.hypot(b.wx-player.wx,b.wy-player.wy))[0];if(t&&Math.hypot(t.wx-player.wx,t.wy-player.wy)<TILE*3.5){player.attackTarget=t;doCombat();}else notify('⚔ No hay enemigo cerca');}if(a==='heal')useHeal();if(a==='inv')toggleInv();if(a==='shop')toggleShop();if(a==='pause')togglePause();if(a==='save')saveGame(true);});});
   canvas.addEventListener('pointerdown',e=>{if(!IS_MOBILE)return;if(invOpen||shopOpen||dialogOpen||gamePaused)return;const g=getGA();if(e.clientX<g.x||e.clientX>g.x+g.w||e.clientY<g.y||e.clientY>g.y+g.h)return;e.preventDefault();const wx=e.clientX+cam.x,wy=e.clientY+cam.y;const npc=npcs.find(n=>Math.hypot(n.wx-wx,n.wy-wy)<TILE*1.0);if(npc){openDialog(npc);return;}const en=enemies.find(en=>!en.dead&&Math.hypot(en.wx-wx,en.wy-wy)<TILE*1.1);if(en){player.attackTarget=en;doCombat();return;}player.tx=wx;player.ty=wy;spawnParts(e.clientX,e.clientY,'#c8a96e',4);},{passive:false});
 
