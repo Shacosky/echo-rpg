@@ -15,10 +15,12 @@
   --gold:#ffd36a; --green:#66ff9a; --red:#ff6b6b; --purple:#c8b7ff;
   --bg:#02030a; --panel:rgba(10,12,28,.98); --border:rgba(255,211,106,.25);
   --text:#f0f0f0; --muted:#b0b8c8; --dim:#707888;
+  --ui:1;      /* escala global de la interfaz (menú de ajustes) */
+  --bright:1;  /* brillo del mundo (filtro sobre el canvas) */
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:'Courier New',monospace;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;overscroll-behavior:none;}
-canvas#game{display:block;position:absolute;top:0;left:0;}
+canvas#game{display:block;position:absolute;top:0;left:0;filter:brightness(var(--bright));}
 
 /* ══ SINGLE BOOT SCREEN ══ */
 #boot{
@@ -96,10 +98,12 @@ canvas#game{display:block;position:absolute;top:0;left:0;}
 #layout{
   position:fixed;inset:0;
   display:grid;
-  grid-template-columns:220px 1fr 220px;
-  grid-template-rows:32px 1fr 160px;
+  grid-template-columns:calc(220px*var(--ui)) 1fr calc(220px*var(--ui));
+  grid-template-rows:calc(32px*var(--ui)) 1fr calc(160px*var(--ui));
   pointer-events:none;z-index:200;
 }
+/* La escala --ui agranda paneles y menús (cada uno diseñado para su ancho base) */
+#header,#left-panel,#right-panel,#bottom-bar,.modal,.pause-card,.boot-card,#race-panel,#dialog-box,#m-hud{zoom:var(--ui);}
 #header{
   grid-column:1/-1;
   background:linear-gradient(90deg,#0a0800,#050510,#0a0800);
@@ -287,6 +291,16 @@ canvas#game{display:block;position:absolute;top:0;left:0;}
 .pause-card h1{color:var(--gold);font-size:18px;letter-spacing:4px;margin-bottom:6px;}
 .pause-card p{color:var(--muted);font-size:10px;line-height:1.7;margin-bottom:14px;}
 .pause-actions{display:grid;gap:7px;}
+.settings-box{border:1px solid rgba(255,211,106,.18);border-radius:4px;padding:10px 11px;margin-bottom:14px;background:rgba(6,6,18,.5);}
+.set-title{color:var(--gold);font-size:10px;letter-spacing:2px;margin-bottom:9px;}
+.set-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.set-row:last-child{margin-bottom:0;}
+.set-lbl{color:var(--muted);font-size:9px;letter-spacing:1px;width:54px;flex-shrink:0;}
+.set-sizes{display:flex;gap:5px;flex:1;}
+.size-btn{flex:1;background:#060612;border:1px solid rgba(255,211,106,.3);color:var(--muted);font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:6px 0;cursor:pointer;border-radius:3px;transition:all .15s;touch-action:manipulation;}
+.size-btn:hover{border-color:var(--gold);color:var(--gold);}
+.size-btn.active{background:rgba(255,211,106,.18);border-color:var(--gold);color:var(--gold);}
+.set-row input[type=range]{flex:1;accent-color:var(--gold);height:18px;touch-action:manipulation;}
 .pause-btn{background:#060612;border:1px solid rgba(255,211,106,.3);color:var(--muted);font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;padding:9px 11px;cursor:pointer;text-align:left;border-radius:3px;transition:all .15s;touch-action:manipulation;}
 .pause-btn:hover{border-color:var(--gold);color:var(--gold);}
 .pause-btn.danger:hover{border-color:#802020;color:#ff6060;}
@@ -416,6 +430,7 @@ body.mobile #narrator-area{width:auto;}
       <span style="color:#333;font-size:8px;">WASD·I·M·P</span>
       <span style="color:#333">·</span>
       <span id="audio-toggle" title="Silenciar / activar audio" style="cursor:pointer;font-size:13px;user-select:none;">🔊</span>
+      <span id="settings-btn" title="Ajustes (tamaño, volumen, brillo)" style="cursor:pointer;font-size:13px;user-select:none;">⚙️</span>
     </div>
   </div>
   <div id="left-panel">
@@ -570,6 +585,19 @@ body.mobile #narrator-area{width:auto;}
   <div class="pause-card">
     <h1>⏸ PAUSA</h1>
     <p>Partida congelada. Guardado automático activo.</p>
+    <div class="settings-box">
+      <div class="set-title">⚙ AJUSTES</div>
+      <div class="set-row"><span class="set-lbl">Tamaño</span>
+        <div class="set-sizes">
+          <button class="size-btn" data-ui="1">S</button>
+          <button class="size-btn" data-ui="1.15">M</button>
+          <button class="size-btn" data-ui="1.3">G</button>
+          <button class="size-btn" data-ui="1.5">XL</button>
+        </div>
+      </div>
+      <div class="set-row"><span class="set-lbl">Volumen</span><input type="range" id="set-vol" min="0" max="100" value="60"></div>
+      <div class="set-row"><span class="set-lbl">Brillo</span><input type="range" id="set-bright" min="100" max="220" value="100"></div>
+    </div>
     <div class="pause-actions">
       <button class="pause-btn" id="p-resume" type="button">▶ CONTINUAR</button>
       <button class="pause-btn" id="p-save" type="button">💾 GUARDAR AHORA</button>
@@ -589,6 +617,7 @@ body.mobile #narrator-area{width:auto;}
   <span class="mh-stat">🪙<b id="mh-coins">50</b></span>
   <span id="mh-zone">ALDEA DE INICIO</span>
   <div class="mh-btn" id="m-mute">🔊</div>
+  <div class="mh-btn" id="m-settings">⚙️</div>
 </div>
 <!-- Botones que abren los cajones (paneles bajo demanda) -->
 <div id="m-toolbar">
@@ -924,6 +953,8 @@ const mmCtx=mmCv.getContext('2d');
 const TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints>0;
 let IS_MOBILE = false;
 const M_HUD_H = 38; // alto del HUD compacto móvil
+let UI_SCALE = 1;   // escala de UI (espejo JS de --ui) para getGA
+let WTXT = 1;       // escala del texto dibujado en el canvas
 function updatePlatform(){
   const vw=innerWidth, vh=innerHeight;
   IS_MOBILE = vw<=950 || (TOUCH && Math.min(vw,vh)<=600);
@@ -935,11 +966,13 @@ function updatePlatform(){
 function getGA(){
   const vw=innerWidth,vh=innerHeight;
   if(IS_MOBILE){
-    // Juego casi a pantalla completa: solo un inset superior para el HUD.
+    // Juego casi a pantalla completa: solo un inset superior para el HUD (escalado).
     // Los controles táctiles flotan translúcidos por encima.
-    return{x:0,y:M_HUD_H,w:vw,h:Math.max(120,vh-M_HUD_H)};
+    const t=M_HUD_H*UI_SCALE;
+    return{x:0,y:t,w:vw,h:Math.max(120,vh-t)};
   }
-  let l=220,r=220,t=32,b=160;
+  // Paneles escalados por --ui: reservar el ancho/alto correspondiente.
+  let l=220*UI_SCALE,r=220*UI_SCALE,t=32*UI_SCALE,b=160*UI_SCALE;
   return{x:l,y:t,w:Math.max(160,vw-l-r),h:Math.max(100,vh-t-b)};
 }
 function resize(){
@@ -1355,6 +1388,24 @@ document.getElementById('shop-x').addEventListener('click',closeShop);
 document.getElementById('p-resume').addEventListener('click',()=>togglePause(false));
 document.getElementById('p-save').addEventListener('click',()=>{saveGame(true);togglePause(false);});
 document.getElementById('p-menu').addEventListener('click',()=>{clearSession();location.reload();});
+
+// ── AJUSTES (tamaño UI/texto, volumen, brillo) ──
+function markSizeBtns(){document.querySelectorAll('.size-btn').forEach(b=>b.classList.toggle('active',Math.abs(parseFloat(b.dataset.ui)-UI_SCALE)<0.001));}
+function setUiScale(s){UI_SCALE=s;WTXT=s;document.documentElement.style.setProperty('--ui',s);localStorage.setItem('echo_ui_scale',String(s));markSizeBtns();if(typeof resize==='function')resize();}
+function setBright(b){document.documentElement.style.setProperty('--bright',b);localStorage.setItem('echo_bright',String(b));}
+function applyUiSettings(){
+  const s=parseFloat(localStorage.getItem('echo_ui_scale')||'1')||1;
+  const br=parseFloat(localStorage.getItem('echo_bright')||'1')||1;
+  setUiScale(s);setBright(br);
+  const vol=Math.round((parseFloat(localStorage.getItem('echo_audio_vol')||'0.6'))*100);
+  const vEl=document.getElementById('set-vol');if(vEl)vEl.value=vol;
+  const bEl=document.getElementById('set-bright');if(bEl)bEl.value=Math.round(br*100);
+}
+document.querySelectorAll('.size-btn').forEach(b=>b.addEventListener('click',()=>{Sound.sfx('click');setUiScale(parseFloat(b.dataset.ui));}));
+document.getElementById('set-vol').addEventListener('input',e=>{if(window.Sound)Sound.setVolume(e.target.value/100);});
+document.getElementById('set-bright').addEventListener('input',e=>setBright(e.target.value/100));
+['settings-btn','m-settings'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('click',()=>{Sound.sfx('click');togglePause(true);});});
+applyUiSettings();
 document.querySelectorAll('#inv-modal .tab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('#inv-modal .tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');renderInv();}));
 document.querySelectorAll('#shop-tabs .tab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('#shop-tabs .tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');renderShop(t.dataset.tab);}));
 document.querySelectorAll('.sk').forEach((s,i)=>{s.addEventListener('click',()=>{if(i===7)toggleInv();else if(i===2)useHeal();else{document.querySelectorAll('.sk').forEach(x=>x.classList.remove('active'));s.classList.add('active');}});});
@@ -1414,12 +1465,12 @@ function drawChar(sx,sy,isPlayer,color,name,hp,hpMax,flash){
     ctx.strokeStyle='rgba(160,160,240,.45)';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(sx+9,sy-9+wf);ctx.lineTo(sx+20,sy-32+wf);ctx.stroke();
     ctx.strokeStyle='#c8c8d4';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sx+9,sy-9+wf);ctx.lineTo(sx+20,sy-32+wf);ctx.stroke();
     ctx.shadowBlur=0;
-    ctx.font='9px Courier New';ctx.textAlign='center';ctx.fillStyle='#c8a96e';ctx.fillText(playerName,sx,sy-34);
+    ctx.font=(9*WTXT)+'px Courier New';ctx.textAlign='center';ctx.fillStyle='#c8a96e';ctx.fillText(playerName,sx,sy-34);
   } else {
     ctx.fillStyle=color;ctx.fillRect(sx+7,sy-8,3,14);
     if(hpMax){const bw=36,bx=sx-18,by=sy-34;ctx.fillStyle='#160000';ctx.fillRect(bx,by,bw,4);ctx.fillStyle=hp/hpMax>.5?'#28a828':'#a82828';ctx.fillRect(bx,by,bw*(hp/hpMax),4);}
     if(flash){ctx.fillStyle='rgba(255,40,40,.45)';ctx.fillRect(sx-7,sy-22,14,34);}
-    if(name){ctx.font='8px Courier New';ctx.textAlign='center';ctx.fillStyle='#aaa';ctx.fillText(name,sx,sy-40);}
+    if(name){ctx.font=(8*WTXT)+'px Courier New';ctx.textAlign='center';ctx.fillStyle='#aaa';ctx.fillText(name,sx,sy-40);}
   }
 }
 
@@ -1654,7 +1705,7 @@ function render(){
   });
   if(player.tx!==null){const tx=g.x+player.tx-cam.x,ty=g.y+player.ty-cam.y;const pulse=.4+.4*Math.sin(Date.now()*.01);ctx.strokeStyle=`rgba(200,169,110,${pulse})`;ctx.lineWidth=2;ctx.beginPath();ctx.arc(tx,ty,9,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(tx-6,ty);ctx.lineTo(tx+6,ty);ctx.moveTo(tx,ty-6);ctx.lineTo(tx,ty+6);ctx.stroke();}
   particles.forEach(p=>{ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);ctx.fill();});ctx.globalAlpha=1;
-  floats.forEach(f=>{ctx.globalAlpha=f.life;ctx.font='bold 13px Courier New';ctx.textAlign='center';ctx.strokeStyle='rgba(0,0,0,.7)';ctx.lineWidth=3;ctx.strokeText(f.text,f.x,f.y);ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y);});ctx.globalAlpha=1;
+  floats.forEach(f=>{ctx.globalAlpha=f.life;ctx.font='bold '+(13*WTXT)+'px Courier New';ctx.textAlign='center';ctx.strokeStyle='rgba(0,0,0,.7)';ctx.lineWidth=3;ctx.strokeText(f.text,f.x,f.y);ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y);});ctx.globalAlpha=1;
   ctx.restore();drawMinimap();
 }
 
@@ -2220,7 +2271,7 @@ function drawWanderingMerchant(){
   const pct = wanderingMerchant.timer/45000;
   ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(sx-20,sy+5,40,4);
   ctx.fillStyle=pct>.5?'#ffd060':'#ff4040';ctx.fillRect(sx-20,sy+5,40*pct,4);
-  ctx.font='8px Courier New';ctx.fillStyle='#ffd060';
+  ctx.font=(8*WTXT)+'px Courier New';ctx.fillStyle='#ffd060';
   ctx.fillText('MERCADER ERRANTE',sx,sy+16);
 }
 
@@ -2273,7 +2324,7 @@ function drawGraves(){
     ctx.globalAlpha = Math.max(0.2, 1-age/300); // fade over 5 min
     ctx.font='14px serif';ctx.textAlign='center';
     ctx.fillText('⚰️',sx,sy);
-    ctx.font='7px Courier New';ctx.fillStyle='#888';
+    ctx.font=(7*WTXT)+'px Courier New';ctx.fillStyle='#888';
     ctx.fillText(grave.name,sx,sy+12);
     ctx.globalAlpha=1;
   });
