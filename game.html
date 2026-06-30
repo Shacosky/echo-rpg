@@ -1492,23 +1492,68 @@ function drawMinimap(){
   WORLD_ZONES.forEach(z=>{if(!z.unlocked)return;mmCtx.fillStyle=z.id===currentZone?'rgba(200,169,110,.15)':'rgba(100,100,200,.07)';mmCtx.fillRect(z.x*sx,z.y*sy,z.w*sx,z.h*sy);if(z.id===currentZone){mmCtx.strokeStyle='rgba(200,169,110,.4)';mmCtx.lineWidth=1;mmCtx.strokeRect(z.x*sx,z.y*sy,z.w*sx,z.h*sy);}});
   enemies.forEach(e=>{if(!e.dead){mmCtx.fillStyle=e.type==='boss'?'#cc00cc':e.type==='demon'?'#cc2020':'#cc3030';mmCtx.fillRect(e.wx/TILE*sx-1,e.wy/TILE*sy-1,2,2);}});
   npcs.forEach(n=>{mmCtx.fillStyle='#3030cc';mmCtx.fillRect(n.wx/TILE*sx-1,n.wy/TILE*sy-1,2,2);});
+  if(race.active)race.rivals.forEach(r=>{if(!r.active)return;mmCtx.fillStyle=r.color;mmCtx.fillRect(r.wx/TILE*sx-1.5,r.wy/TILE*sy-1.5,3,3);});
   mmCtx.fillStyle='#ffcc22';const px=player.wx/TILE*sx,py=player.wy/TILE*sy;mmCtx.fillRect(px-2,py-2,4,4);
   const g=getGA();mmCtx.strokeStyle='rgba(180,140,80,.4)';mmCtx.lineWidth=1;mmCtx.strokeRect(cam.x/TILE*sx,cam.y/TILE*sy,(g.w/TILE)*sx,(g.h/TILE)*sy);
 }
 
 // ── RACE SYSTEM ─────────────────────────────────────
-const race={active:false,startTime:0,duration:(IS_MOBILE?5:10)*60*1000,goals:{kills:{target:10,current:0,done:false},gold:{target:200,current:0,done:false},level:{target:5,current:1,done:false},zones:{target:3,current:1,done:false}},wins:0,bestTime:null,rivals:[{name:'Kakuna',prog:0,spd:.7},{name:'Casio',prog:0,spd:.55},{name:'Nicetastic',prog:0,spd:.45}]};
-function startRace(){race.active=true;race.startTime=Date.now();Object.values(race.goals).forEach(g=>{g.current=g===race.goals.level?player.level:g===race.goals.zones?1:0;g.done=false;});race.rivals.forEach(r=>r.prog=0);document.getElementById('race-panel').style.display='block';Sound.sfx('raceStart');const rmin=Math.round(race.duration/60000);addLog(`⚡ <em>¡CARRERA INICIADA!</em> ${rmin} minutos.`,'bright');notify(`⚡ ¡CARRERA! ${rmin}min — completa los 4 objetivos`);}
+const race={active:false,startTime:0,duration:(IS_MOBILE?5:10)*60*1000,goals:{kills:{target:10,current:0,done:false},gold:{target:200,current:0,done:false},level:{target:5,current:1,done:false},zones:{target:3,current:1,done:false}},wins:0,bestTime:null,rivals:[
+  {name:'Kakuna',color:'#30c8a0',spd:.7,wx:0,wy:0,dir:'down',frame:0,ft:0,target:null,atkTimer:0,active:false,prog:0,kills:0,gold:0,level:1,zones:1},
+  {name:'Casio',color:'#c89030',spd:.55,wx:0,wy:0,dir:'down',frame:0,ft:0,target:null,atkTimer:0,active:false,prog:0,kills:0,gold:0,level:1,zones:1},
+  {name:'Nicetastic',color:'#b060d0',spd:.45,wx:0,wy:0,dir:'down',frame:0,ft:0,target:null,atkTimer:0,active:false,prog:0,kills:0,gold:0,level:1,zones:1}
+]};
+function startRace(){race.active=true;race.startTime=Date.now();Object.values(race.goals).forEach(g=>{g.current=g===race.goals.level?player.level:g===race.goals.zones?1:0;g.done=false;});
+  race.rivals.forEach((r,i)=>{r.prog=0;r.kills=0;r.gold=0;r.level=1;r.zones=1;r.target=null;r.atkTimer=0;r.frame=0;r.ft=0;r.active=true;
+    // dispersarlos cerca del centro del mundo, separados entre sí
+    r.wx=(40+(i-1)*6+Math.random()*4)*TILE;r.wy=(38+i*5+Math.random()*4)*TILE;});
+  document.getElementById('race-panel').style.display='block';Sound.sfx('raceStart');const rmin=Math.round(race.duration/60000);addLog(`⚡ <em>¡CARRERA INICIADA!</em> ${rmin} minutos.`,'bright');notify(`⚡ ¡CARRERA! ${rmin}min — completa los 4 objetivos`);}
 function updateRaceGoal(type,val){if(!race.active)return;const g=race.goals[type];if(g.done)return;if(type==='level')g.current=val;else g.current=Math.min(g.target,g.current+val);if(g.current>=g.target){g.done=true;notify('✅ Meta: '+type.toUpperCase()+'!');document.getElementById('rg-'+type)?.classList.add('rg-done');if(Object.values(race.goals).every(g=>g.done))raceWon();}updateRaceUI();}
 function updateRaceUI(){if(!race.active)return;const elapsed=Date.now()-race.startTime;const rem=Math.max(0,race.duration-elapsed);const mins=Math.floor(rem/60000);const secs=Math.floor((rem%60000)/1000);const cd=document.getElementById('race-countdown');if(cd){cd.textContent=String(mins).padStart(2,'0')+':'+String(secs).padStart(2,'0');cd.style.color=rem<60000?'#ff0000':rem<180000?'#ff6020':'#ff2080';}
 const g=race.goals;
 [['kills','kills'],['gold','gold'],['level','level'],['zones','zones']].forEach(([k,id])=>{const bar=document.getElementById('rg-'+id+'-bar');const val=document.getElementById('rg-'+id+'-val');const tgt=g[k].target;const cur=g[k].current;if(bar)bar.style.width=Math.min(100,k==='level'?(cur-1)/Math.max(1,tgt-1)*100:cur/tgt*100)+'%';if(val)val.textContent=cur+'/'+tgt;});
-race.rivals.forEach(r=>r.prog=Math.min(1,(elapsed/race.duration)*r.spd*(0.8+Math.random()*.04)));
 renderLeaderboard();if(rem<=0&&race.active)raceFailed();}
 function calcRaceScore(){const g=race.goals;return Math.floor(Math.min(100,((g.kills.current/g.kills.target)+(g.gold.current/g.gold.target)+((g.level.current-1)/Math.max(1,g.level.target-1))+(g.zones.current/g.zones.target))/4*100));}
-function renderLeaderboard(){const scores=[{name:playerName,score:calcRaceScore(),you:true},...race.rivals.map(r=>({name:r.name,score:Math.floor(r.prog*100),you:false}))].sort((a,b)=>b.score-a.score);const lb=document.getElementById('race-lb-slots');if(!lb)return;lb.innerHTML='';scores.forEach((s,i)=>{const d=document.createElement('div');d.className='lb-player'+(s.you?' you':'')+(i===0?' first':'');d.textContent=(i===0?'👑 ':'')+s.name+' '+s.score+'%';lb.appendChild(d);});}
-function raceWon(){const elapsed=Date.now()-race.startTime;const timeStr=Math.floor(elapsed/60000)+':'+String(Math.floor((elapsed%60000)/1000)).padStart(2,'0');race.active=false;race.wins++;if(!race.bestTime||elapsed<race.bestTime)race.bestTime=elapsed;player.honor+=200;player.coins+=150;updateHUD();document.getElementById('race-panel').style.display='none';document.getElementById('sb-wins').textContent=race.wins;document.getElementById('sb-best').textContent=timeStr;document.getElementById('sb-honor').textContent=player.honor;addLog(`🏆 <em>¡CARRERA GANADA!</em> ${timeStr} · +200 honor · +150🪙`,'bright');notify('🏆 ¡GANASTE! +200 honor +150🪙');Sound.sfx('raceWin');spawnParts(canvas.width/2,canvas.height/2,'#d0a020',30);if(IS_MOBILE){notify('⚡ Toca el rayo para otra carrera');}else setTimeout(()=>{notify('⚡ Nueva carrera en 30s...');setTimeout(startRace,30000);},5000);}
-function raceFailed(){race.active=false;document.getElementById('race-panel').style.display='none';addLog('⏰ <em>Tiempo agotado.</em>','red');if(IS_MOBILE){notify('⏰ Tiempo agotado. Toca ⚡ para reintentar');}else{notify('⏰ Tiempo agotado! Nueva carrera en 30s...');setTimeout(startRace,30000);}}
+function rivalScore(r){const g=race.goals;return Math.floor(Math.min(100,((Math.min(r.kills,g.kills.target)/g.kills.target)+(Math.min(r.gold,g.gold.target)/g.gold.target)+((r.level-1)/Math.max(1,g.level.target-1))+((r.zones-1)/Math.max(1,g.zones.target-1)))/4*100));}
+// ── RIVALES REALES: deambulan, pelean y compiten por las 4 metas ──
+function updateRivals(){
+  if(!race.active)return;
+  const dInc=1/Math.max(1,(race.duration/1000)*60); // fracción de progreso por frame si pelea sin parar
+  const g=race.goals;
+  race.rivals.forEach(r=>{
+    if(!r.active)return;
+    // buscar enemigo vivo más cercano (sin tocarlo: es sparring visual)
+    let best=null,bd=1e9;
+    for(const e of enemies){if(e.dead)continue;const d=Math.hypot(e.wx-r.wx,e.wy-r.wy);if(d<bd){bd=d;best=e;}}
+    r.target=best;
+    let fighting=false;
+    if(best&&bd>TILE*1.3){ // perseguir
+      const dx=best.wx-r.wx,dy=best.wy-r.wy,len=Math.hypot(dx,dy)||1,sp=1.0+r.spd*0.9;
+      r.wx+=dx/len*sp;r.wy+=dy/len*sp;
+      r.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up');
+      r.ft++;if(r.ft>8){r.frame=(r.frame+1)%4;r.ft=0;}
+    } else if(best){ // en rango: "atacar" (solo efecto, no daña al enemigo)
+      fighting=true;
+      if(r.atkTimer>0)r.atkTimer--;else{r.atkTimer=Math.round(34-r.spd*16);spawnParts(best.wx-cam.x,best.wy-cam.y,r.color,3);}
+    } else { // deambular
+      r.wx+=Math.cos(Date.now()*.0012+r.wy*.01)*0.7;r.wy+=Math.sin(Date.now()*.0011+r.wx*.01)*0.7;
+    }
+    r.wx=Math.max(TILE,Math.min((WW-2)*TILE,r.wx));r.wy=Math.max(TILE,Math.min((WH-2)*TILE,r.wy));
+    // progreso calibrado a la duración: más rápido si pelea, "viajando" si no
+    const pace=r.spd+0.35; // Kakuna ~1.05 (puede ganar al final), otros menos
+    r.prog=Math.min(1,r.prog+dInc*pace*(fighting?1:0.45));
+    // mapear progreso a contadores reales (lo que muestra el marcador)
+    r.kills=Math.round(r.prog*g.kills.target);
+    r.gold=Math.round(r.prog*g.gold.target);
+    r.level=1+Math.floor(r.prog*(g.level.target-1));
+    r.zones=1+Math.floor(r.prog*(g.zones.target-1));
+    if(r.prog>=1)raceLostToRival(r);
+  });
+}
+function renderLeaderboard(){const scores=[{name:playerName,score:calcRaceScore(),you:true},...race.rivals.map(r=>({name:r.name,score:rivalScore(r),you:false}))].sort((a,b)=>b.score-a.score);const lb=document.getElementById('race-lb-slots');if(!lb)return;lb.innerHTML='';scores.forEach((s,i)=>{const d=document.createElement('div');d.className='lb-player'+(s.you?' you':'')+(i===0?' first':'');d.textContent=(i===0?'👑 ':'')+s.name+' '+s.score+'%';lb.appendChild(d);});}
+function raceLostToRival(r){if(!race.active)return;race.active=false;race.rivals.forEach(x=>x.active=false);document.getElementById('race-panel').style.display='none';addLog(`🏁 <em>${r.name}</em> completó las metas primero. Perdiste la carrera.`,'red');notify(`🏁 ${r.name} ganó la carrera`);Sound.sfx('death');if(IS_MOBILE){notify('⚡ Toca ⚡ para reintentar');}else setTimeout(startRace,30000);}
+function raceWon(){const elapsed=Date.now()-race.startTime;const timeStr=Math.floor(elapsed/60000)+':'+String(Math.floor((elapsed%60000)/1000)).padStart(2,'0');race.active=false;race.rivals.forEach(x=>x.active=false);race.wins++;if(!race.bestTime||elapsed<race.bestTime)race.bestTime=elapsed;player.honor+=200;player.coins+=150;updateHUD();document.getElementById('race-panel').style.display='none';document.getElementById('sb-wins').textContent=race.wins;document.getElementById('sb-best').textContent=timeStr;document.getElementById('sb-honor').textContent=player.honor;addLog(`🏆 <em>¡CARRERA GANADA!</em> ${timeStr} · +200 honor · +150🪙`,'bright');notify('🏆 ¡GANASTE! +200 honor +150🪙');Sound.sfx('raceWin');spawnParts(canvas.width/2,canvas.height/2,'#d0a020',30);if(IS_MOBILE){notify('⚡ Toca el rayo para otra carrera');}else setTimeout(()=>{notify('⚡ Nueva carrera en 30s...');setTimeout(startRace,30000);},5000);}
+function raceFailed(){race.active=false;race.rivals.forEach(x=>x.active=false);document.getElementById('race-panel').style.display='none';addLog('⏰ <em>Tiempo agotado.</em>','red');if(IS_MOBILE){notify('⏰ Tiempo agotado. Toca ⚡ para reintentar');}else{notify('⏰ Tiempo agotado! Nueva carrera en 30s...');setTimeout(startRace,30000);}}
 setInterval(()=>{if(race.active){updateRaceUI();const sb=document.getElementById('sb-race');if(sb)sb.textContent='ACTIVA ⚡';}},1000);
 
 // ── ANTI-HACK ───────────────────────────────────────
@@ -1571,7 +1616,7 @@ function update(){
   player.moving=dx!==0||dy!==0;
   if(player.moving){const nx=player.wx+dx*spd,ny=player.wy+dy*spd;if(isWalkable(nx,player.wy))player.wx=Math.max(TILE,Math.min((WW-2)*TILE,nx));if(isWalkable(player.wx,ny))player.wy=Math.max(TILE,Math.min((WH-2)*TILE,ny));player.ft++;if(player.ft>8){player.frame=(player.frame+1)%4;player.ft=0;}}
   npcs.forEach(npc=>{npc.t++;if(npc.t>130){npc.t=0;const dirs=[[0,1],[0,-1],[1,0],[-1,0],[0,0],[0,0]];const d=dirs[Math.floor(Math.random()*dirs.length)];npc.dx=d[0];npc.dy=d[1];if(d[0]>0)npc.dir='right';else if(d[0]<0)npc.dir='left';else if(d[1]>0)npc.dir='down';else if(d[1]<0)npc.dir='up';}npc.wx=Math.max(TILE,Math.min((WW-2)*TILE,npc.wx+npc.dx));npc.wy=Math.max(TILE,Math.min((WH-2)*TILE,npc.wy+npc.dy));if(npc.dx||npc.dy){npc.ft++;if(npc.ft>8){npc.frame=(npc.frame+1)%4;npc.ft=0;}}});
-  enemies.forEach(enemyAI);doCombat();
+  enemies.forEach(enemyAI);doCombat();updateRivals();
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.vy+=.11;p.life-=.04;if(p.life<=0)particles.splice(i,1);}
   for(let i=floats.length-1;i>=0;i--){floats[i].y+=floats[i].vy;floats[i].life-=.028;if(floats[i].life<=0)floats.splice(i,1);}
   const g=getGA();cam.x=player.wx-g.x-g.w/2;cam.y=player.wy-g.y-g.h/2;
@@ -1597,11 +1642,13 @@ function render(){
   const ag=ctx.createRadialGradient(cx,cy,0,cx,cy,activeMapDef.lightRadius||220);
   ag.addColorStop(0,activeMapDef.ambientColor||'rgba(180,120,40,.06)');ag.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=ag;ctx.fillRect(g.x,g.y,g.w,g.h);
-  const all=[...npcs.map(n=>({...n,_t:'npc'})),...enemies.map(e=>({...e,_t:'en'})),{wx:player.wx,wy:player.wy,_t:'pl'}].sort((a,b)=>a.wy-b.wy);
+  const rivalsLive=race.active?race.rivals.filter(r=>r.active).map(r=>({...r,_t:'rival'})):[];
+  const all=[...npcs.map(n=>({...n,_t:'npc'})),...enemies.map(e=>({...e,_t:'en'})),...rivalsLive,{wx:player.wx,wy:player.wy,_t:'pl'}].sort((a,b)=>a.wy-b.wy);
   all.forEach(e=>{
     const esx=g.x+e.wx-cam.x,esy=g.y+e.wy-cam.y;
     if(esx<g.x-TILE||esx>g.x+g.w+TILE||esy<g.y-TILE||esy>g.y+g.h+TILE)return;
     if(e._t==='pl'){const flash=player.invincible>0&&Math.floor(player.invincible/4)%2===0;if(!flash)drawChar(esx,esy,true,null,null,null,null,false);}
+    else if(e._t==='rival'){drawChar(esx,esy,false,e.color,'⚡'+e.name,null,null,false);if(e.target&&Math.hypot(e.target.wx-e.wx,e.target.wy-e.wy)<=TILE*1.3){ctx.font='11px serif';ctx.textAlign='center';ctx.fillText('⚔',esx+12,esy-6);}}
     else if(e._t==='npc'){drawChar(esx,esy,false,e.color,e.name,null,null,false);if(e.isShop){ctx.font='13px serif';ctx.textAlign='center';ctx.fillText('🏪',esx,esy-50);}}
     else if(e._t==='en'){if(e.dead&&e.deathTimer<=0)return;ctx.globalAlpha=e.dead?Math.max(0,e.deathTimer/28):1;if(e.type==='boss'){ctx.globalAlpha*=.8;ctx.fillStyle='rgba(100,0,120,.12)';ctx.beginPath();ctx.arc(esx,esy,TILE,0,Math.PI*2);ctx.fill();}drawChar(esx,esy,false,e.color,e.name+'★',e.hp,e.hpMax,e.dmgFlash>0);ctx.globalAlpha=1;}
   });
