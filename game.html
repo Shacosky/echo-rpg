@@ -291,37 +291,70 @@ canvas#game{display:block;position:absolute;top:0;left:0;}
 .pause-btn:hover{border-color:var(--gold);color:var(--gold);}
 .pause-btn.danger:hover{border-color:#802020;color:#ff6060;}
 
-/* MOBILE */
+/* ══ MOBILE ══ */
 #rotate-lock{position:fixed;inset:0;z-index:200000;display:none;background:radial-gradient(circle at center,#090918,#000);color:var(--gold);align-items:center;justify-content:center;text-align:center;font-family:'Courier New',monospace;padding:24px;}
 .rl-card{border:1px solid rgba(255,211,106,.2);background:var(--panel);box-shadow:0 0 60px rgba(0,0,0,.95);padding:22px;border-radius:5px;max-width:400px;}
 .rl-card h2{font-size:16px;letter-spacing:3px;margin-bottom:8px;}
 .rl-card p{font-size:10px;color:var(--muted);line-height:1.7;}
-@media(max-width:950px) and (orientation:portrait){#rotate-lock{display:flex;}}
+/* El bloqueo de orientación SOLO aparece al jugar en vertical (login/menús sí se usan en portrait) */
+body.mobile.portrait.playing #rotate-lock{display:flex;}
+
+/* Controles táctiles */
 #mobile-controls{display:none;position:fixed;inset:0;z-index:780;pointer-events:none;font-family:'Courier New',monospace;}
-.mobile-pad,.mobile-actions{position:absolute;bottom:168px;pointer-events:all;}
-.mobile-pad{left:10px;width:126px;height:126px;display:grid;grid-template-columns:42px 42px 42px;grid-template-rows:42px 42px 42px;gap:0;opacity:.9;}
-.mobile-pad button,.mobile-actions button{background:rgba(6,6,18,.8);border:1px solid rgba(255,211,106,.4);color:var(--gold);border-radius:7px;font-family:'Courier New',monospace;font-weight:900;touch-action:none;}
-.mobile-pad button{font-size:17px;}
-.mobile-pad button:active,.mobile-actions button:active{background:rgba(255,211,106,.18);transform:scale(.96);}
+.mobile-pad,.mobile-actions{position:absolute;bottom:calc(16px + env(safe-area-inset-bottom));pointer-events:all;}
+.mobile-pad{left:calc(12px + env(safe-area-inset-left));width:150px;height:150px;display:grid;grid-template-columns:50px 50px 50px;grid-template-rows:50px 50px 50px;gap:0;opacity:.92;}
+.mobile-pad button,.mobile-actions button{background:rgba(6,6,18,.82);border:1px solid rgba(255,211,106,.4);color:var(--gold);border-radius:8px;font-family:'Courier New',monospace;font-weight:900;touch-action:none;}
+.mobile-pad button{font-size:19px;}
+.mobile-pad button:active,.mobile-actions button:active{background:rgba(255,211,106,.2);transform:scale(.95);}
 #m-up{grid-column:2;grid-row:1;}#m-left{grid-column:1;grid-row:2;}#m-down{grid-column:2;grid-row:3;}#m-right{grid-column:3;grid-row:2;}
-.mobile-actions{right:10px;display:grid;grid-template-columns:50px 50px 50px;grid-template-rows:50px 50px;gap:7px;opacity:.92;}
-.mobile-actions button{font-size:9px;letter-spacing:.5px;padding:3px;}
-.mobile-actions .big{font-size:17px;}
-@media(max-width:950px) and (orientation:landscape){
-  #layout{grid-template-columns:118px 1fr 130px;grid-template-rows:28px 1fr 118px;}
-  #header h1{font-size:10px;letter-spacing:1.5px;}
-  #bottom-bar{height:118px!important;}
-  #gamelog{font-size:9px;line-height:1.4;}
-  #narrator-area{width:156px;min-width:140px;}
-  #narrator-input{font-size:11px;}
-  #narrator-send{font-size:9px;}
-  .sk{width:30px;height:30px;}.sk-ic{font-size:13px;}
-  #craft-panel{width:140px;padding:5px;}
-  #season-badge{display:none;}
-  #race-panel{top:30px;min-width:330px;transform:translateX(-50%) scale(.82);transform-origin:top center;}
-  .mobile-pad,.mobile-actions{bottom:124px;}
-  #mobile-controls{display:block;}
-}
+.mobile-actions{right:calc(12px + env(safe-area-inset-right));display:grid;grid-template-columns:58px 58px 58px;grid-template-rows:56px 56px;gap:8px;opacity:.94;}
+.mobile-actions button{font-size:10px;letter-spacing:.5px;padding:3px;line-height:1.25;}
+.mobile-actions .big{font-size:19px;}
+body.mobile.landscape.playing #mobile-controls{display:block;}
+
+/* HUD superior compacto (solo móvil) */
+#m-hud{display:none;position:fixed;top:0;left:0;right:0;height:38px;z-index:770;
+  align-items:center;gap:9px;padding:0 10px;padding-top:env(safe-area-inset-top);
+  background:linear-gradient(180deg,rgba(4,4,12,.96),rgba(4,4,12,.55));border-bottom:1px solid #141420;
+  font-family:'Courier New',monospace;font-size:10px;color:var(--gold);pointer-events:all;}
+body.mobile.playing #m-hud{display:flex;}
+.mh-bars{display:flex;flex-direction:column;gap:2px;min-width:84px;}
+.mh-bar{height:5px;width:84px;background:#160606;border-radius:3px;overflow:hidden;}
+.mh-bar i{display:block;height:100%;width:100%;}
+.mh-hp i{background:linear-gradient(90deg,#a82828,#ff5050);}
+.mh-mp i{background:linear-gradient(90deg,#2840a8,#5070ff);}
+.mh-stat{color:var(--muted);white-space:nowrap;}
+.mh-stat b{color:var(--gold);}
+#mh-zone{flex:1;text-align:center;color:#c8a96e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;letter-spacing:1px;}
+.mh-btn{width:30px;height:28px;display:flex;align-items:center;justify-content:center;background:rgba(10,10,24,.8);border:1px solid #1e1e2e;border-radius:5px;color:var(--gold);font-size:14px;}
+.mh-btn:active{background:rgba(255,211,106,.2);}
+
+/* Barra de botones (cajones) */
+#m-toolbar{display:none;position:fixed;right:calc(10px + env(safe-area-inset-right));top:calc(46px + env(safe-area-inset-top));
+  flex-direction:column;gap:7px;z-index:775;pointer-events:all;}
+body.mobile.landscape.playing #m-toolbar{display:flex;}
+#m-toolbar button{width:42px;height:42px;background:rgba(6,6,18,.82);border:1px solid rgba(255,211,106,.35);
+  color:var(--gold);border-radius:8px;font-size:17px;font-family:'Courier New',monospace;}
+#m-toolbar button:active{background:rgba(255,211,106,.2);transform:scale(.95);}
+
+/* Cajones deslizables: reusan los paneles de escritorio */
+#m-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:940;}
+body.mobile #m-scrim.show{display:block;}
+body.mobile #header{display:none;}
+body.mobile #layout{position:static;display:block;z-index:auto;}
+body.mobile #center{display:none;}
+body.mobile #skillbar-wrap{display:none;}
+body.mobile #season-badge{display:none;}
+body.mobile #left-panel,body.mobile #right-panel{position:fixed;top:0;bottom:0;width:min(82vw,310px);
+  z-index:950;overflow-y:auto;transition:transform .25s ease;will-change:transform;
+  padding-top:calc(8px + env(safe-area-inset-top));}
+body.mobile #left-panel{left:0;transform:translateX(-102%);}
+body.mobile #right-panel{right:0;transform:translateX(102%);border-left:1px solid #141420;border-right:none;}
+body.mobile #bottom-bar{position:fixed;left:0;right:0;bottom:0;height:auto!important;max-height:48vh;
+  z-index:950;flex-direction:column;overflow-y:auto;transition:transform .25s ease;will-change:transform;
+  transform:translateY(102%);padding-bottom:env(safe-area-inset-bottom);}
+body.mobile #left-panel.open,body.mobile #right-panel.open,body.mobile #bottom-bar.open{transform:none;}
+body.mobile #narrator-area{width:auto;}
 </style>
 </head>
 <body>
@@ -545,6 +578,27 @@ canvas#game{display:block;position:absolute;top:0;left:0;}
   </div>
 </div>
 <div id="rotate-lock"><div class="rl-card"><h2>📱 GIRA EL CELULAR</h2><p>ECHO RPG requiere modo horizontal. Activa rotación automática.</p></div></div>
+
+<!-- ══ HUD MÓVIL (solo móvil) ══ -->
+<div id="m-hud">
+  <div class="mh-bars">
+    <div class="mh-bar mh-hp"><i id="mh-hp" style="width:100%"></i></div>
+    <div class="mh-bar mh-mp"><i id="mh-mp" style="width:100%"></i></div>
+  </div>
+  <span class="mh-stat">Lv<b id="mh-lvl">1</b></span>
+  <span class="mh-stat">🪙<b id="mh-coins">50</b></span>
+  <span id="mh-zone">ALDEA DE INICIO</span>
+  <div class="mh-btn" id="m-mute">🔊</div>
+</div>
+<!-- Botones que abren los cajones (paneles bajo demanda) -->
+<div id="m-toolbar">
+  <button id="mt-stats" title="Estado y misiones">📊</button>
+  <button id="mt-map" title="Mapa y mercado">🗺️</button>
+  <button id="mt-craft" title="Crafteo y registro">⚒️</button>
+  <button id="mt-race" title="Iniciar carrera">⚡</button>
+</div>
+<div id="m-scrim"></div>
+
 <div id="mobile-controls" aria-hidden="true">
   <div class="mobile-pad">
     <button id="m-up" data-key="KeyW">▲</button>
@@ -866,15 +920,30 @@ const ctx=canvas.getContext('2d');
 const mmCv=document.getElementById('mm');
 const mmCtx=mmCv.getContext('2d');
 
+// ── PLATAFORMA (fuente única de verdad) ──────────────
+const TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints>0;
+let IS_MOBILE = false;
+const M_HUD_H = 38; // alto del HUD compacto móvil
+function updatePlatform(){
+  const vw=innerWidth, vh=innerHeight;
+  IS_MOBILE = vw<=950 || (TOUCH && Math.min(vw,vh)<=600);
+  const b=document.body;
+  b.classList.toggle('mobile', IS_MOBILE);
+  b.classList.toggle('landscape', vw>vh);
+  b.classList.toggle('portrait', vh>=vw);
+}
 function getGA(){
   const vw=innerWidth,vh=innerHeight;
-  const mob=vw<=950||('ontouchstart' in window&&Math.min(vw,vh)<=520);
-  const land=vw>vh;
+  if(IS_MOBILE){
+    // Juego casi a pantalla completa: solo un inset superior para el HUD.
+    // Los controles táctiles flotan translúcidos por encima.
+    return{x:0,y:M_HUD_H,w:vw,h:Math.max(120,vh-M_HUD_H)};
+  }
   let l=220,r=220,t=32,b=160;
-  if(mob&&land){if(vw<=740){l=108;r=122;t=28;b=118;}else{l=118;r=130;t=28;b=118;}}
   return{x:l,y:t,w:Math.max(160,vw-l-r),h:Math.max(100,vh-t-b)};
 }
 function resize(){
+  updatePlatform();
   canvas.width=innerWidth;canvas.height=innerHeight;
   const g=getGA();
   canvas.style.clipPath=`inset(${g.y}px ${innerWidth-g.x-g.w}px ${innerHeight-g.y-g.h}px ${g.x}px)`;
@@ -1066,6 +1135,7 @@ function travelToZone(zone){
   currentZone=zone.id;player.wx=(zone.x+zone.w/2)*TILE;player.wy=(zone.y+zone.h/2)*TILE;player.tx=null;player.ty=null;
   showZoneFlash(zone);Sound.zoneMusic(zone.id);updateQuestProgress('explore','zone');updateRaceGoal('zones',1);renderZoneList();
   const hz=document.getElementById('header-zone');if(hz)hz.textContent=zone.name;
+  const mz=document.getElementById('mh-zone');if(mz)mz.textContent=zone.name;
 }
 function checkZoneUnlocks(){WORLD_ZONES.forEach(z=>{if(!z.unlocked&&player.level>=z.minLvl){z.unlocked=true;notify('🗺 Zona desbloqueada: '+z.name);renderZoneList();}});}
 function showZoneFlash(zone){
@@ -1195,6 +1265,11 @@ function updateHUD(){
   document.getElementById('s-spd').textContent=player.spd;
   document.getElementById('s-coins').textContent=player.coins;
   const sb=document.getElementById('sb-honor');if(sb)sb.textContent=player.honor;
+  // Espejo en el HUD móvil compacto
+  const mhp=document.getElementById('mh-hp');if(mhp)mhp.style.width=(player.hp/player.hpMax*100)+'%';
+  const mmp=document.getElementById('mh-mp');if(mmp)mmp.style.width=(player.mp/player.mpMax*100)+'%';
+  const ml=document.getElementById('mh-lvl');if(ml)ml.textContent=player.level;
+  const mc=document.getElementById('mh-coins');if(mc)mc.textContent=player.coins;
 }
 function checkLevelUp(){
   if(player.xp<player.xpNext)return;
@@ -1297,6 +1372,7 @@ window.addEventListener('keydown',e=>{
 window.addEventListener('keyup',e=>keys[e.code]=false);
 
 canvas.addEventListener('click',e=>{
+  if(IS_MOBILE)return; // en móvil maneja el pointerdown táctil (setupMobile)
   if(invOpen||shopOpen||dialogOpen||gamePaused)return;
   const g=getGA();
   if(e.clientX<g.x||e.clientX>g.x+g.w||e.clientY<g.y||e.clientY>g.y+g.h)return;
@@ -1421,8 +1497,8 @@ function drawMinimap(){
 }
 
 // ── RACE SYSTEM ─────────────────────────────────────
-const race={active:false,startTime:0,duration:10*60*1000,goals:{kills:{target:10,current:0,done:false},gold:{target:200,current:0,done:false},level:{target:5,current:1,done:false},zones:{target:3,current:1,done:false}},wins:0,bestTime:null,rivals:[{name:'Kakuna',prog:0,spd:.7},{name:'Casio',prog:0,spd:.55},{name:'Nicetastic',prog:0,spd:.45}]};
-function startRace(){race.active=true;race.startTime=Date.now();Object.values(race.goals).forEach(g=>{g.current=g===race.goals.level?player.level:g===race.goals.zones?1:0;g.done=false;});race.rivals.forEach(r=>r.prog=0);document.getElementById('race-panel').style.display='block';Sound.sfx('raceStart');addLog('⚡ <em>¡CARRERA INICIADA!</em> 10 minutos.','bright');notify('⚡ ¡CARRERA! 10min — completa los 4 objetivos');}
+const race={active:false,startTime:0,duration:(IS_MOBILE?5:10)*60*1000,goals:{kills:{target:10,current:0,done:false},gold:{target:200,current:0,done:false},level:{target:5,current:1,done:false},zones:{target:3,current:1,done:false}},wins:0,bestTime:null,rivals:[{name:'Kakuna',prog:0,spd:.7},{name:'Casio',prog:0,spd:.55},{name:'Nicetastic',prog:0,spd:.45}]};
+function startRace(){race.active=true;race.startTime=Date.now();Object.values(race.goals).forEach(g=>{g.current=g===race.goals.level?player.level:g===race.goals.zones?1:0;g.done=false;});race.rivals.forEach(r=>r.prog=0);document.getElementById('race-panel').style.display='block';Sound.sfx('raceStart');const rmin=Math.round(race.duration/60000);addLog(`⚡ <em>¡CARRERA INICIADA!</em> ${rmin} minutos.`,'bright');notify(`⚡ ¡CARRERA! ${rmin}min — completa los 4 objetivos`);}
 function updateRaceGoal(type,val){if(!race.active)return;const g=race.goals[type];if(g.done)return;if(type==='level')g.current=val;else g.current=Math.min(g.target,g.current+val);if(g.current>=g.target){g.done=true;notify('✅ Meta: '+type.toUpperCase()+'!');document.getElementById('rg-'+type)?.classList.add('rg-done');if(Object.values(race.goals).every(g=>g.done))raceWon();}updateRaceUI();}
 function updateRaceUI(){if(!race.active)return;const elapsed=Date.now()-race.startTime;const rem=Math.max(0,race.duration-elapsed);const mins=Math.floor(rem/60000);const secs=Math.floor((rem%60000)/1000);const cd=document.getElementById('race-countdown');if(cd){cd.textContent=String(mins).padStart(2,'0')+':'+String(secs).padStart(2,'0');cd.style.color=rem<60000?'#ff0000':rem<180000?'#ff6020':'#ff2080';}
 const g=race.goals;
@@ -1431,8 +1507,8 @@ race.rivals.forEach(r=>r.prog=Math.min(1,(elapsed/race.duration)*r.spd*(0.8+Math
 renderLeaderboard();if(rem<=0&&race.active)raceFailed();}
 function calcRaceScore(){const g=race.goals;return Math.floor(Math.min(100,((g.kills.current/g.kills.target)+(g.gold.current/g.gold.target)+((g.level.current-1)/Math.max(1,g.level.target-1))+(g.zones.current/g.zones.target))/4*100));}
 function renderLeaderboard(){const scores=[{name:playerName,score:calcRaceScore(),you:true},...race.rivals.map(r=>({name:r.name,score:Math.floor(r.prog*100),you:false}))].sort((a,b)=>b.score-a.score);const lb=document.getElementById('race-lb-slots');if(!lb)return;lb.innerHTML='';scores.forEach((s,i)=>{const d=document.createElement('div');d.className='lb-player'+(s.you?' you':'')+(i===0?' first':'');d.textContent=(i===0?'👑 ':'')+s.name+' '+s.score+'%';lb.appendChild(d);});}
-function raceWon(){const elapsed=Date.now()-race.startTime;const timeStr=Math.floor(elapsed/60000)+':'+String(Math.floor((elapsed%60000)/1000)).padStart(2,'0');race.active=false;race.wins++;if(!race.bestTime||elapsed<race.bestTime)race.bestTime=elapsed;player.honor+=200;player.coins+=150;updateHUD();document.getElementById('race-panel').style.display='none';document.getElementById('sb-wins').textContent=race.wins;document.getElementById('sb-best').textContent=timeStr;document.getElementById('sb-honor').textContent=player.honor;addLog(`🏆 <em>¡CARRERA GANADA!</em> ${timeStr} · +200 honor · +150🪙`,'bright');notify('🏆 ¡GANASTE! +200 honor +150🪙');Sound.sfx('raceWin');spawnParts(canvas.width/2,canvas.height/2,'#d0a020',30);setTimeout(()=>{notify('⚡ Nueva carrera en 30s...');setTimeout(startRace,30000);},5000);}
-function raceFailed(){race.active=false;document.getElementById('race-panel').style.display='none';addLog('⏰ <em>Tiempo agotado.</em>','red');notify('⏰ Tiempo agotado! Nueva carrera en 30s...');setTimeout(startRace,30000);}
+function raceWon(){const elapsed=Date.now()-race.startTime;const timeStr=Math.floor(elapsed/60000)+':'+String(Math.floor((elapsed%60000)/1000)).padStart(2,'0');race.active=false;race.wins++;if(!race.bestTime||elapsed<race.bestTime)race.bestTime=elapsed;player.honor+=200;player.coins+=150;updateHUD();document.getElementById('race-panel').style.display='none';document.getElementById('sb-wins').textContent=race.wins;document.getElementById('sb-best').textContent=timeStr;document.getElementById('sb-honor').textContent=player.honor;addLog(`🏆 <em>¡CARRERA GANADA!</em> ${timeStr} · +200 honor · +150🪙`,'bright');notify('🏆 ¡GANASTE! +200 honor +150🪙');Sound.sfx('raceWin');spawnParts(canvas.width/2,canvas.height/2,'#d0a020',30);if(IS_MOBILE){notify('⚡ Toca el rayo para otra carrera');}else setTimeout(()=>{notify('⚡ Nueva carrera en 30s...');setTimeout(startRace,30000);},5000);}
+function raceFailed(){race.active=false;document.getElementById('race-panel').style.display='none';addLog('⏰ <em>Tiempo agotado.</em>','red');if(IS_MOBILE){notify('⏰ Tiempo agotado. Toca ⚡ para reintentar');}else{notify('⏰ Tiempo agotado! Nueva carrera en 30s...');setTimeout(startRace,30000);}}
 setInterval(()=>{if(race.active){updateRaceUI();const sb=document.getElementById('sb-race');if(sb)sb.textContent='ACTIVA ⚡';}},1000);
 
 // ── ANTI-HACK ───────────────────────────────────────
@@ -1468,7 +1544,7 @@ function doHardReset(){
   const overlay=document.getElementById('hack-overlay');overlay.style.transition='opacity .5s';overlay.style.opacity='0';
   setTimeout(()=>{overlay.style.display='none';overlay.style.opacity='1';['hl1','hl2','hl3','hl4','hl5'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});if(bf)bf.style.width='0%';if(bp)bp.textContent='0%';},600);
   addLog('🔴 <em>PARTIDA REINICIADA</em> — El sistema no olvida.','red');notify('🔴 Reset completo. Comienza de nuevo.');
-  setTimeout(startRace,5000);
+  if(!IS_MOBILE)setTimeout(startRace,5000);
 }
 
 // ── SAVE / LOAD ─────────────────────────────────────
@@ -1545,7 +1621,24 @@ function setupMobile(){
   document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
   ctrl.querySelectorAll('[data-key]').forEach(btn=>{const code=btn.dataset.key;btn.addEventListener('pointerdown',e=>{e.preventDefault();keys[code]=true;player.tx=null;player.ty=null;});['pointerup','pointercancel','pointerleave'].forEach(ev=>btn.addEventListener(ev,e=>{e.preventDefault();keys[code]=false;}));});
   ctrl.querySelectorAll('[data-action]').forEach(btn=>{btn.addEventListener('pointerdown',e=>{e.preventDefault();const a=btn.dataset.action;if(a==='attack'){const t=enemies.filter(e=>!e.dead).sort((a,b)=>Math.hypot(a.wx-player.wx,a.wy-player.wy)-Math.hypot(b.wx-player.wx,b.wy-player.wy))[0];if(t&&Math.hypot(t.wx-player.wx,t.wy-player.wy)<TILE*3.5){player.attackTarget=t;doCombat();}else notify('⚔ No hay enemigo cerca');}if(a==='heal')useHeal();if(a==='inv')toggleInv();if(a==='shop')toggleShop();if(a==='pause')togglePause();if(a==='save')saveGame(true);});});
-  canvas.addEventListener('pointerdown',e=>{const vw=innerWidth,vh=innerHeight;if(vw>vh&&(vw<=950||'ontouchstart' in window)){const g=getGA();if(e.clientX<g.x||e.clientX>g.x+g.w||e.clientY<g.y||e.clientY>g.y+g.h)return;e.preventDefault();const wx=e.clientX+cam.x,wy=e.clientY+cam.y;const npc=npcs.find(n=>Math.hypot(n.wx-wx,n.wy-wy)<TILE*1.0);if(npc){openDialog(npc);return;}const en=enemies.find(en=>!en.dead&&Math.hypot(en.wx-wx,en.wy-wy)<TILE*1.1);if(en){player.attackTarget=en;doCombat();return;}player.tx=wx;player.ty=wy;spawnParts(e.clientX,e.clientY,'#c8a96e',4);}},{passive:false});
+  canvas.addEventListener('pointerdown',e=>{if(!IS_MOBILE)return;if(invOpen||shopOpen||dialogOpen||gamePaused)return;const g=getGA();if(e.clientX<g.x||e.clientX>g.x+g.w||e.clientY<g.y||e.clientY>g.y+g.h)return;e.preventDefault();const wx=e.clientX+cam.x,wy=e.clientY+cam.y;const npc=npcs.find(n=>Math.hypot(n.wx-wx,n.wy-wy)<TILE*1.0);if(npc){openDialog(npc);return;}const en=enemies.find(en=>!en.dead&&Math.hypot(en.wx-wx,en.wy-wy)<TILE*1.1);if(en){player.attackTarget=en;doCombat();return;}player.tx=wx;player.ty=wy;spawnParts(e.clientX,e.clientY,'#c8a96e',4);},{passive:false});
+
+  // Cajones bajo demanda (reusan los paneles de escritorio)
+  const scrim=document.getElementById('m-scrim');
+  const dStats=document.getElementById('left-panel'), dMap=document.getElementById('right-panel'), dCraft=document.getElementById('bottom-bar');
+  let openDrawer=null;
+  const closeDrawer=()=>{if(openDrawer){openDrawer.classList.remove('open');openDrawer=null;}scrim.classList.remove('show');};
+  const toggleDrawer=p=>{Sound.sfx('click');if(openDrawer===p){closeDrawer();return;}if(openDrawer)openDrawer.classList.remove('open');openDrawer=p;p.classList.add('open');scrim.classList.add('show');};
+  document.getElementById('mt-stats').addEventListener('click',()=>{toggleDrawer(dStats);renderQuests();});
+  document.getElementById('mt-map').addEventListener('click',()=>{toggleDrawer(dMap);renderZoneList();renderEconomy();});
+  document.getElementById('mt-craft').addEventListener('click',()=>{toggleDrawer(dCraft);renderCraft();});
+  document.getElementById('mt-race').addEventListener('click',()=>{Sound.sfx('click');closeDrawer();if(race.active)notify('⚡ Carrera ya activa');else startRace();});
+  scrim.addEventListener('click',closeDrawer);
+  // Mute en el HUD móvil
+  const mute=document.getElementById('m-mute');
+  const syncMute=()=>{mute.textContent=localStorage.getItem('echo_audio_muted')==='1'?'🔇':'🔊';};
+  syncMute();
+  mute.addEventListener('click',()=>{if(window.Sound)Sound.toggleMute();syncMute();});
 }
 
 // ── GAME INIT ───────────────────────────────────────
@@ -2266,6 +2359,7 @@ window.Sound = Sound; // accesible desde consola para pruebas del equipo de audi
 
 function gameInit(){
   if(gameStarted)return;gameStarted=true;
+  document.body.classList.add('playing');
   spawnEnemies();
   addItem('health_potion',3);addItem('mana_potion',2);
   updateHUD();renderInv();renderShop();renderQuests();renderZoneList();renderCraft();renderEconomy();updateHeader();
@@ -2275,7 +2369,8 @@ function gameInit(){
   addLog('🔍 <em>[E]</em> excavar reliquias · 🐔 Caza el Pollo Dorado · 📜 Busca pergaminos ocultos','sys');
   setTimeout(()=>showZoneFlash(WORLD_ZONES[0]),500);
   Sound.zoneMusic(currentZone);
-  setTimeout(startRace,4000);
+  if(IS_MOBILE){addLog('📱 <em>Modo móvil:</em> toca para mover/atacar · ⚡ inicia carreras (5 min)','sys');}
+  else setTimeout(startRace,4000); // escritorio: carrera automática de 10 min
   setTimeout(triggerWorldEvent, 30000); // First event after 30s
   setupMobile();
   function loop(){update();render();requestAnimationFrame(loop);}loop();
