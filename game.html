@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="ECHO RPG">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>ECHO RPG — Mundo Lifo v3.0</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='14' font-size='14'%3E%E2%9A%94%EF%B8%8F%3C/text%3E%3C/svg%3E">
 <style>
 :root{
   --gold:#ffd36a; --green:#66ff9a; --red:#ff6b6b; --purple:#c8b7ff;
@@ -340,8 +341,7 @@ canvas#game{display:block;position:absolute;top:0;left:0;}
       <div class="boot-field"><label>Password</label><input id="b-pass" type="password" autocomplete="current-password" placeholder="mínimo 6 chars" enterkeyhint="go"></div>
     </div>
     <div class="boot-extra" id="b-extra">
-      <div class="boot-field"><label>Alias público</label><input id="b-alias" maxlength="24" placeholder="HéroeDeLifo" enterkeyhint="next"></div>
-      <div class="boot-field"><label>Código beta</label><input id="b-code" maxlength="24" placeholder="ECHO-TESTER" enterkeyhint="go"></div>
+      <div class="boot-field"><label>Alias público</label><input id="b-alias" maxlength="24" placeholder="HéroeDeLifo" enterkeyhint="go"></div>
     </div>
     <div class="boot-msg" id="b-msg"></div>
     <div class="boot-actions">
@@ -381,6 +381,8 @@ canvas#game{display:block;position:absolute;top:0;left:0;}
       <span id="header-time">--:--</span>
       <span style="color:#333">·</span>
       <span style="color:#333;font-size:8px;">WASD·I·M·P</span>
+      <span style="color:#333">·</span>
+      <span id="audio-toggle" title="Silenciar / activar audio" style="cursor:pointer;font-size:13px;user-select:none;">🔊</span>
     </div>
   </div>
   <div id="left-panel">
@@ -411,9 +413,10 @@ canvas#game{display:block;position:absolute;top:0;left:0;}
       <div id="quest-list"></div>
     </div>
     <div class="lp-section">
-      <div class="lp-title">Clan</div>
+      <div class="lp-title">Clan <span style="color:#333;font-size:8px;letter-spacing:1px;">· LOCAL</span></div>
       <div id="clan-name">— Sin clan —</div>
       <div id="clan-members"></div>
+      <input id="clan-input" maxlength="20" placeholder="Nombre del clan..." enterkeyhint="go" style="display:none;width:100%;margin-top:5px;background:#06060f;border:1px solid #1a1a2a;color:var(--gold);font-size:9px;padding:3px 6px;border-radius:2px;font-family:'Courier New',monospace;box-sizing:border-box;">
       <button id="clan-join" type="button">[ Crear / Unirse ]</button>
     </div>
   </div>
@@ -441,16 +444,14 @@ canvas#game{display:block;position:absolute;top:0;left:0;}
     </div>
     <div id="skillbar-wrap">
       <div class="sk-row">
-        <div class="sk active" id="sk0"><span class="sk-ic">⚔️</span><span class="sk-k">1</span></div>
-        <div class="sk" id="sk1"><span class="sk-ic">🔮</span><span class="sk-k">2</span></div>
-        <div class="sk" id="sk2"><span class="sk-ic">💚</span><span class="sk-k">3</span></div>
-        <div class="sk" id="sk3"><span class="sk-ic">🛡️</span><span class="sk-k">4</span></div>
+        <div class="sk" id="sk-attack" title="Fijar enemigo más cercano"><span class="sk-ic">⚔️</span><span class="sk-k">CLIC</span></div>
+        <div class="sk" id="sk-heal" title="Curar (gasta 20 MP)"><span class="sk-ic">💚</span><span class="sk-k">3</span></div>
+        <div class="sk" id="sk-inv" title="Inventario"><span class="sk-ic">🎒</span><span class="sk-k">I</span></div>
       </div>
       <div class="sk-row">
-        <div class="sk" id="sk4"><span class="sk-ic">🏹</span><span class="sk-k">5</span></div>
-        <div class="sk" id="sk5"><span class="sk-ic">🧪</span><span class="sk-k">6</span></div>
-        <div class="sk" id="sk6"><span class="sk-ic">✨</span><span class="sk-k">7</span></div>
-        <div class="sk" id="sk7"><span class="sk-ic">🎒</span><span class="sk-k">I</span></div>
+        <div class="sk" id="sk-shop" title="Tienda"><span class="sk-ic">🛒</span><span class="sk-k">M</span></div>
+        <div class="sk" id="sk-pause" title="Pausa"><span class="sk-ic">⏸️</span><span class="sk-k">P</span></div>
+        <div class="sk" id="sk-save" title="Guardar partida"><span class="sk-ic">💾</span><span class="sk-k">F5</span></div>
       </div>
     </div>
     <div id="craft-panel">
@@ -651,7 +652,7 @@ document.getElementById('b-submit').addEventListener('click',doAuth);
 document.getElementById('b-demo').addEventListener('click',doDemo);
 document.getElementById('b-guest').addEventListener('click',doGuest);
 document.getElementById('b-clear').addEventListener('click',doClear);
-['b-user','b-pass','b-alias','b-code'].forEach(id=>{
+['b-user','b-pass','b-alias'].forEach(id=>{
   const el=document.getElementById(id);
   if(el) el.addEventListener('keydown',e=>{if(e.key==='Enter')doAuth();});
 });
@@ -890,10 +891,10 @@ const player={wx:40*TILE,wy:40*TILE,dir:'down',moving:false,frame:0,ft:0,tx:null
 // ZONES
 const WORLD_ZONES=[
   {id:'aldea',name:'Aldea de Inicio',sub:'El comienzo de todo',minLvl:1,lore:'Una aldea tranquila. Los mercaderes aquí son honestos... mayormente.',x:28,y:18,w:14,h:12,unlocked:true},
-  {id:'bosque',name:'Bosque Sombrío',sub:'Árboles que recuerdan',minLvl:5,lore:'El bosque tiene memoria. Los que murieron aquí siguen caminando.',x:55,y:8,w:18,h:18,unlocked:false},
-  {id:'ruinas',name:'Ruinas de Valdrath',sub:'Una ciudad que fue',minLvl:10,lore:'Valdrath cayó hace 300 años. Sus calles guardan los ecos de una guerra que nadie ganó.',x:40,y:40,w:12,h:12,unlocked:false},
-  {id:'cavernas',name:'Cavernas del Eco',sub:'El sonido nunca muere aquí',minLvl:18,lore:'Amplifican cada sonido. Dicen que oyes voces de jugadores anteriores.',x:65,y:50,w:10,h:15,unlocked:false},
-  {id:'ciudadela',name:'Ciudadela Oscura',sub:'El corazón del caos',minLvl:30,lore:'Donde el ECHO System nació. Quien llega aquí descubre: este mundo existía antes del primer jugador.',x:60,y:60,w:10,h:10,unlocked:false},
+  {id:'bosque',name:'Bosque Sombrío',sub:'Árboles que recuerdan',minLvl:3,lore:'El bosque tiene memoria. Los que murieron aquí siguen caminando.',x:55,y:8,w:18,h:18,unlocked:false},
+  {id:'ruinas',name:'Ruinas de Valdrath',sub:'Una ciudad que fue',minLvl:6,lore:'Valdrath cayó hace 300 años. Sus calles guardan los ecos de una guerra que nadie ganó.',x:40,y:40,w:12,h:12,unlocked:false},
+  {id:'cavernas',name:'Cavernas del Eco',sub:'El sonido nunca muere aquí',minLvl:10,lore:'Amplifican cada sonido. Dicen que oyes voces de jugadores anteriores.',x:65,y:50,w:10,h:15,unlocked:false},
+  {id:'ciudadela',name:'Ciudadela Oscura',sub:'El corazón del caos',minLvl:15,lore:'Donde el ECHO System nació. Quien llega aquí descubre: este mundo existía antes del primer jugador.',x:60,y:60,w:10,h:10,unlocked:false},
 ];
 let currentZone='aldea';
 
@@ -993,11 +994,35 @@ function spawnEnemies(){
 // NPCS
 const npcs=[
   {wx:31*TILE,wy:21*TILE,color:'#3050a0',name:'Mercader Eldryn',isShop:true,dir:'down',frame:0,ft:0,dx:0,dy:0,t:0,
-   dialog:['Los precios cambian con la guerra. Compra ahora o lamenta después.','Un clan unido puede mover mercados enteros.','La Ciudadela Oscura... dicen que quien llega allí lo entiende todo.']},
+   dialog:[
+     'Los precios cambian con la guerra. Compra ahora o lamenta después.',
+     'Un clan unido puede mover mercados enteros. ¿Ya fundaste el tuyo?',
+     'La Ciudadela Oscura... dicen que quien llega allí lo entiende todo.',
+     'Cuando hay Festival, todo baja de precio. Cuando hay Plaga... reza por tu oro.',
+     '¿Ves esas flechas ▲▼ en el mercado? Compra en ▼, vende en ▲. Así me hice rico.',
+     'Si ves a un mercader errante con capa, no lo pienses: vende cosas que no encontrarás aquí.',
+     'El Pollo Dorado vale más que mi tienda entera. Si lo ves, corre tras él.',
+     'Yo vendí mi primer mapa por tres monedas. Hoy compraría ese mapa por mil.']},
   {wx:36*TILE,wy:24*TILE,color:'#a03030',name:'Guardia Torval',isShop:false,dir:'right',frame:0,ft:0,dx:1,dy:0,t:0,
-   dialog:['Mantente en la aldea si no tienes nivel 5.','Las Ruinas guardan tesoros pero también peligros.','El Señor Oscuro lleva siglos ahí. Nadie lo ha derrotado... todavía.']},
+   dialog:[
+     'Mantente en la aldea si no tienes nivel 3. El Bosque no perdona a los novatos.',
+     'Las Ruinas guardan tesoros, pero también lo que quedó de quienes los buscaron.',
+     'El Señor Oscuro lleva siglos en la Ciudadela. Nadie lo ha derrotado... todavía.',
+     'Sube de nivel matando y ganando carreras. El honor abre las puertas selladas.',
+     'En las Cavernas del Eco la oscuridad come tu linterna. Lleva pociones de sobra.',
+     '¿Las carreras? Diez minutos, cuatro metas. Gánalas y el mundo te respetará.',
+     'Vi a un aventurero excavar con [E] y sacar una hoja negra de la tierra. Cosas hay enterradas.',
+     'No confío en el ECHO System. Vigila demasiado y explica demasiado poco.']},
   {wx:29*TILE,wy:26*TILE,color:'#308040',name:'Sanadora Yira',isShop:false,dir:'left',frame:0,ft:0,dx:-1,dy:0,t:0,
-   dialog:['Puedo sanarte. El descanso es la mejor medicina.','Los jugadores que llegan nunca son del todo nuevos.','La Ciudadela guarda una verdad que el ECHO System prefiere ocultar.']},
+   dialog:[
+     'Puedo sanarte. El descanso es la mejor medicina... la poción, la segunda.',
+     'Los jugadores que llegan nunca son del todo nuevos. Algo de ellos ya estuvo aquí.',
+     'La Ciudadela guarda una verdad que el ECHO System prefiere ocultar.',
+     'Cura con la tecla 3 si tienes maná. Un héroe muerto no completa misiones.',
+     'Hay pergaminos ocultos por el mundo. Cada uno cuenta un pedazo de la historia real.',
+     'Cuando caes, dejas una tumba. He visto el mundo llenarse de ellas... y vaciarse.',
+     'El Eco de las cavernas repite voces de quienes vinieron antes. A veces, la tuya.',
+     'Si oyes música distinta, cambiaste de zona. El mundo suena diferente según dónde pisas.']},
 ];
 
 // WORLD GEN
@@ -1039,7 +1064,7 @@ function renderZoneList(){
 function travelToZone(zone){
   if(player.level<zone.minLvl){notify(`⚠ Necesitas nivel ${zone.minLvl}`);return;}
   currentZone=zone.id;player.wx=(zone.x+zone.w/2)*TILE;player.wy=(zone.y+zone.h/2)*TILE;player.tx=null;player.ty=null;
-  showZoneFlash(zone);updateQuestProgress('explore','zone');updateRaceGoal('zones',1);renderZoneList();
+  showZoneFlash(zone);Sound.zoneMusic(zone.id);updateQuestProgress('explore','zone');updateRaceGoal('zones',1);renderZoneList();
   const hz=document.getElementById('header-zone');if(hz)hz.textContent=zone.name;
 }
 function checkZoneUnlocks(){WORLD_ZONES.forEach(z=>{if(!z.unlocked&&player.level>=z.minLvl){z.unlocked=true;notify('🗺 Zona desbloqueada: '+z.name);renderZoneList();}});}
@@ -1070,14 +1095,24 @@ function doCraft(r){
 
 // ── DIALOG ─────────────────────────────────────────
 let currentNPC=null;
+function npcTip(){
+  const next=WORLD_ZONES.find(z=>!z.unlocked);
+  if(player.hp<player.hpMax*0.4) return 'Estás malherido. Cúrate con la tecla 3 o una poción antes de seguir.';
+  if(race.active) return 'Hay una carrera activa: completa kills, oro, nivel y zonas antes de que el tiempo se acabe.';
+  if(next) return `Alcanza nivel ${next.minLvl} para desbloquear ${next.name}. Vas en nivel ${player.level}.`;
+  return 'Desbloqueaste todo el mundo conocido. Solo queda enfrentar al Señor Oscuro en la Ciudadela.';
+}
 function openDialog(npc){
-  currentNPC=npc;dialogOpen=true;
+  currentNPC=npc;dialogOpen=true;Sound.sfx('click');
   document.getElementById('dlg-speaker').textContent=npc.name;
-  document.getElementById('dlg-text').textContent=npc.dialog[Math.floor(Math.random()*npc.dialog.length)];
+  const say=t=>{document.getElementById('dlg-text').textContent=t;};
+  say(npc.dialog[Math.floor(Math.random()*npc.dialog.length)]);
   const ch=document.getElementById('dlg-choices');ch.innerHTML='';
+  const more={text:'"Cuéntame más..."',fn:()=>say(currentNPC.dialog[Math.floor(Math.random()*currentNPC.dialog.length)])};
+  const tip={text:'"¿Algún consejo?"',fn:()=>say(npcTip())};
   const opts=npc.isShop
-    ?[{text:'Ver mercancía',fn:()=>{closeDialog();toggleShop();}},{text:'"¿Qué hay de nuevo?"',fn:()=>{document.getElementById('dlg-text').textContent=currentNPC.dialog[Math.floor(Math.random()*currentNPC.dialog.length)];}},{text:'Adiós',fn:closeDialog}]
-    :[{text:'"Cuéntame más..."',fn:()=>{document.getElementById('dlg-text').textContent=currentNPC.dialog[Math.floor(Math.random()*currentNPC.dialog.length)];}},{text:'"¿La Ciudadela?"',fn:()=>{document.getElementById('dlg-text').textContent='"La Ciudadela... dicen que quien llega entiende por qué este mundo es real."';}},{text:'Adiós',fn:closeDialog}];
+    ?[{text:'Ver mercancía',fn:()=>{closeDialog();toggleShop();}},more,tip,{text:'Adiós',fn:closeDialog}]
+    :[more,tip,{text:'"¿La Ciudadela?"',fn:()=>say('"La Ciudadela... dicen que quien llega entiende por qué este mundo es real."')},{text:'Adiós',fn:closeDialog}];
   opts.forEach(o=>{const d=document.createElement('div');d.className='dlg-ch';d.textContent=o.text;d.addEventListener('click',o.fn);ch.appendChild(d);});
   document.getElementById('dialog-box').style.display='block';
   if(npc.isShop)updateQuestProgress('buy','merchant');
@@ -1122,13 +1157,29 @@ function doNarrate(){
 }
 
 // ── CLAN ────────────────────────────────────────────
-document.getElementById('clan-join').addEventListener('click',()=>{
-  const clanName=prompt('Nombre de tu clan:');if(!clanName)return;
+const clanBtn=document.getElementById('clan-join'), clanInput=document.getElementById('clan-input');
+function createClan(clanName){
   document.getElementById('clan-name').textContent='🏴 '+clanName;
   document.getElementById('clan-members').innerHTML=`<div class="clan-member">${playerName} <span>Lv.${player.level}</span></div>`;
   document.getElementById('char-class').textContent=playerClass.charAt(0).toUpperCase()+playerClass.slice(1)+' · '+clanName;
-  addLog(`🏴 <em>${playerName}</em> unido al clan <em>${clanName}</em>`);notify('🏴 Clan: '+clanName);player.honor+=10;updateHUD();
+  addLog(`🏴 <em>${playerName}</em> fundó el clan <em>${clanName}</em>`);notify('🏴 Clan: '+clanName);player.honor+=10;updateHUD();
+}
+clanBtn.addEventListener('click',()=>{
+  if(clanInput.style.display==='none'){clanInput.style.display='block';clanInput.focus();clanBtn.textContent='[ Confirmar ]';return;}
+  const clanName=clanInput.value.trim();
+  clanInput.style.display='none';clanInput.value='';clanBtn.textContent='[ Crear / Unirse ]';
+  if(clanName)createClan(clanName);
 });
+clanInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();clanBtn.click();}});
+
+// ── BARRA DE ACCIONES (slots clicables, útil también en móvil) ──
+function selectNearestEnemy(){
+  const t=enemies.filter(e=>!e.dead).sort((a,b)=>Math.hypot(a.wx-player.wx,a.wy-player.wy)-Math.hypot(b.wx-player.wx,b.wy-player.wy))[0];
+  if(t){player.attackTarget=t;notify('🎯 Objetivo fijado');}else notify('Sin enemigos cerca');
+}
+[['sk-attack',selectNearestEnemy],['sk-heal',useHeal],['sk-inv',()=>toggleInv()],
+ ['sk-shop',()=>toggleShop()],['sk-pause',()=>togglePause()],['sk-save',()=>saveGame(true)]
+].forEach(([id,fn])=>{const el=document.getElementById(id);if(el)el.addEventListener('click',()=>{Sound.sfx('click');fn();});});
 
 // ── HUD ─────────────────────────────────────────────
 function updateHUD(){
@@ -1151,7 +1202,7 @@ function checkLevelUp(){
   player.hpMax+=20;player.hp=player.hpMax;player.mpMax+=10;player.mp=player.mpMax;
   player.atk+=3;player.def+=2;player.honor+=50;checkZoneUnlocks();
   const lvlEl=document.getElementById('lvlup');document.getElementById('lvl-txt').textContent=`${playerName} alcanzó nivel ${player.level}`;
-  lvlEl.style.display='block';spawnParts(canvas.width/2,canvas.height/2,'#d0a020',20);
+  lvlEl.style.display='block';spawnParts(canvas.width/2,canvas.height/2,'#d0a020',20);Sound.sfx('levelup');
   setTimeout(()=>lvlEl.style.display='none',2500);
   addLog(`🌟 <em>NIVEL ${player.level}!</em>`,'bright');notify(`⬆ NIVEL ${player.level}! +50 honor`);
   updateRaceGoal('level',player.level);updateHUD();renderInv();renderCraft();
@@ -1178,7 +1229,7 @@ function useItem(idx){
     if(item.effect==='hp')player.hp=Math.min(player.hpMax,player.hp+item.value);
     if(item.effect==='mp')player.mp=Math.min(player.mpMax,player.mp+item.value);
     const g=getGA();floatText(g.x+g.w/2,g.y+g.h/2-40,`+${item.value} ${item.effect.toUpperCase()}`,item.effect==='hp'?'#40ff40':'#4060ff');
-    notify(`${item.icon} Usado: ${item.name}`);item.qty--;if(item.qty<=0)player.inventory[idx]=null;
+    notify(`${item.icon} Usado: ${item.name}`);Sound.sfx('heal');item.qty--;if(item.qty<=0)player.inventory[idx]=null;
     updateHUD();renderInv();renderCraft();
   } else if(item.type==='weapon'){player.equipped.weapon=item;player.atk=10+(item.atk||0);notify(`⚔️ Equipado: ${item.name}`);renderInv();updateHUD();}
   else if(item.type==='armor'){
@@ -1187,7 +1238,7 @@ function useItem(idx){
     notify(`🛡️ Equipado: ${item.name}`);renderInv();updateHUD();
   } else if(item.type==='lore'){notify('🏺 '+item.desc);addLog(`🏺 <em>"${item.desc}"</em>`);}
 }
-function useHeal(){if(player.mp<20){notify('⚠ MP insuficiente!');return;}player.mp-=20;player.hp=Math.min(player.hpMax,player.hp+40);const g=getGA();floatText(g.x+g.w/2,g.y+g.h/2-40,'+40 HP','#40ff40');updateHUD();}
+function useHeal(){if(player.mp<20){notify('⚠ MP insuficiente!');return;}player.mp-=20;player.hp=Math.min(player.hpMax,player.hp+40);const g=getGA();floatText(g.x+g.w/2,g.y+g.h/2-40,'+40 HP','#40ff40');Sound.sfx('heal');updateHUD();}
 
 // ── SHOP ────────────────────────────────────────────
 const shopCatalog=[ITEMS.health_potion,ITEMS.mana_potion,ITEMS.iron_sword,ITEMS.leather_armor,ITEMS.steel_sword,ITEMS.speed_boots,ITEMS.echo_cloak];
@@ -1198,12 +1249,12 @@ function renderShop(tab='buy'){
       const mp=market[item.id];const price=mp?mp.price:item.price;const onSale=mp&&mp.price<mp.base;
       const d=document.createElement('div');d.className='shop-item';
       d.innerHTML=`<span class="sh-ic">${item.icon}</span><div class="sh-info"><div class="sh-name">${item.name}</div><div class="sh-desc">${item.desc}</div></div><span class="sh-price${onSale?' sale':''}">🪙${price}${onSale?' ↓':''}</span>`;
-      d.addEventListener('click',()=>{if(player.coins<price){notify('⚠ Monedas insuficientes!');return;}player.coins-=price;addItem(item.id);notify(`🛒 ${item.icon} ${item.name} 🪙${price}`);if(mp){mp.demand+=4;mp.supply=Math.max(1,mp.supply-1);}updateQuestProgress('buy','any');updateHUD();renderShop(tab);renderCraft();});
+      d.addEventListener('click',()=>{if(player.coins<price){notify('⚠ Monedas insuficientes!');return;}player.coins-=price;addItem(item.id);Sound.sfx('coin');notify(`🛒 ${item.icon} ${item.name} 🪙${price}`);if(mp){mp.demand+=4;mp.supply=Math.max(1,mp.supply-1);}updateQuestProgress('buy','any');updateHUD();renderShop(tab);renderCraft();});
       c.appendChild(d);
     });
   } else if(tab==='sell'){
     let any=false;
-    player.inventory.forEach((item,i)=>{if(!item)return;any=true;const sp=Math.floor((item.price||10)*.6);const d=document.createElement('div');d.className='shop-item';d.innerHTML=`<span class="sh-ic">${item.icon}</span><div class="sh-info"><div class="sh-name">${item.name}</div><div class="sh-desc">Vender</div></div><span class="sh-price">🪙${sp}</span>`;d.addEventListener('click',()=>{player.coins+=sp;player.inventory[i]=null;notify(`💰 ${item.icon} vendido 🪙${sp}`);if(market[item.id])market[item.id].supply+=3;updateHUD();renderShop(tab);renderInv();renderCraft();});c.appendChild(d);});
+    player.inventory.forEach((item,i)=>{if(!item)return;any=true;const sp=Math.floor((item.price||10)*.6);const d=document.createElement('div');d.className='shop-item';d.innerHTML=`<span class="sh-ic">${item.icon}</span><div class="sh-info"><div class="sh-name">${item.name}</div><div class="sh-desc">Vender</div></div><span class="sh-price">🪙${sp}</span>`;d.addEventListener('click',()=>{player.coins+=sp;player.inventory[i]=null;Sound.sfx('coin');notify(`💰 ${item.icon} vendido 🪙${sp}`);if(market[item.id])market[item.id].supply+=3;updateHUD();renderShop(tab);renderInv();renderCraft();});c.appendChild(d);});
     if(!any)c.innerHTML='<div style="padding:14px;color:var(--dim);font-size:9px;">Inventario vacío</div>';
   } else {
     c.innerHTML=`<div style="padding:12px;font-size:9px;color:var(--muted);line-height:2;">
@@ -1308,8 +1359,9 @@ function doCombat(){
   target.hp-=dmg;target.dmgFlash=12;
   floatText(target.wx-cam.x,target.wy-cam.y-28,`${crit?'CRIT ':''}-${dmg}`,crit?'#ffd060':'#ff3030');
   player.attackTimer=22;spawnParts(target.wx-cam.x,target.wy-cam.y,crit?'#ffd060':'#ff1818',crit?8:3);
+  Sound.sfx(crit?'crit':'hit');
   if(target.hp<=0){
-    target.dead=true;target.deathTimer=28;
+    target.dead=true;target.deathTimer=28;Sound.sfx('kill');if(target.coins>0)Sound.sfx('coin');
     player.xp+=target.xp;player.coins+=target.coins;player.honor+=Math.floor(target.xp/10);
     updateQuestProgress('kill',target.type);updateRaceGoal('kills',1);updateRaceGoal('gold',target.coins);
     floatText(target.wx-cam.x,target.wy-cam.y-38,`+${target.xp}XP`,'#c8a020');
@@ -1346,8 +1398,8 @@ function enemyAI(en){
 }
 function handleDeath(){
   if(player.isDead)return;player.isDead=true;player.hp=0;player.tx=null;player.ty=null;player.attackTarget=null;
-  notify('💀 Has caído. Reviviendo...');addLog('💀 <em>Caíste. El ECHO System te recuerda.</em>','red');
-  setTimeout(()=>{player.hp=Math.floor(player.hpMax*.6);player.mp=Math.floor(player.mpMax*.5);player.wx=40*TILE;player.wy=40*TILE;player.invincible=90;player.isDead=false;currentZone='aldea';enemies.forEach(e=>e.agro=false);updateHUD();renderZoneList();addLog('🔁 <em>Respawn en Aldea.</em>','sys');saveGame();},2200);
+  notify('💀 Has caído. Reviviendo...');addLog('💀 <em>Caíste. El ECHO System te recuerda.</em>','red');Sound.sfx('death');
+  setTimeout(()=>{player.hp=Math.floor(player.hpMax*.6);player.mp=Math.floor(player.mpMax*.5);player.wx=40*TILE;player.wy=40*TILE;player.invincible=90;player.isDead=false;currentZone='aldea';enemies.forEach(e=>e.agro=false);Sound.zoneMusic('aldea');updateHUD();renderZoneList();addLog('🔁 <em>Respawn en Aldea.</em>','sys');saveGame();},2200);
 }
 
 // ── NOTIFICATIONS ───────────────────────────────────
@@ -1370,7 +1422,7 @@ function drawMinimap(){
 
 // ── RACE SYSTEM ─────────────────────────────────────
 const race={active:false,startTime:0,duration:10*60*1000,goals:{kills:{target:10,current:0,done:false},gold:{target:200,current:0,done:false},level:{target:5,current:1,done:false},zones:{target:3,current:1,done:false}},wins:0,bestTime:null,rivals:[{name:'Kakuna',prog:0,spd:.7},{name:'Casio',prog:0,spd:.55},{name:'Nicetastic',prog:0,spd:.45}]};
-function startRace(){race.active=true;race.startTime=Date.now();Object.values(race.goals).forEach(g=>{g.current=g===race.goals.level?player.level:g===race.goals.zones?1:0;g.done=false;});race.rivals.forEach(r=>r.prog=0);document.getElementById('race-panel').style.display='block';addLog('⚡ <em>¡CARRERA INICIADA!</em> 10 minutos.','bright');notify('⚡ ¡CARRERA! 10min — completa los 4 objetivos');}
+function startRace(){race.active=true;race.startTime=Date.now();Object.values(race.goals).forEach(g=>{g.current=g===race.goals.level?player.level:g===race.goals.zones?1:0;g.done=false;});race.rivals.forEach(r=>r.prog=0);document.getElementById('race-panel').style.display='block';Sound.sfx('raceStart');addLog('⚡ <em>¡CARRERA INICIADA!</em> 10 minutos.','bright');notify('⚡ ¡CARRERA! 10min — completa los 4 objetivos');}
 function updateRaceGoal(type,val){if(!race.active)return;const g=race.goals[type];if(g.done)return;if(type==='level')g.current=val;else g.current=Math.min(g.target,g.current+val);if(g.current>=g.target){g.done=true;notify('✅ Meta: '+type.toUpperCase()+'!');document.getElementById('rg-'+type)?.classList.add('rg-done');if(Object.values(race.goals).every(g=>g.done))raceWon();}updateRaceUI();}
 function updateRaceUI(){if(!race.active)return;const elapsed=Date.now()-race.startTime;const rem=Math.max(0,race.duration-elapsed);const mins=Math.floor(rem/60000);const secs=Math.floor((rem%60000)/1000);const cd=document.getElementById('race-countdown');if(cd){cd.textContent=String(mins).padStart(2,'0')+':'+String(secs).padStart(2,'0');cd.style.color=rem<60000?'#ff0000':rem<180000?'#ff6020':'#ff2080';}
 const g=race.goals;
@@ -1379,7 +1431,7 @@ race.rivals.forEach(r=>r.prog=Math.min(1,(elapsed/race.duration)*r.spd*(0.8+Math
 renderLeaderboard();if(rem<=0&&race.active)raceFailed();}
 function calcRaceScore(){const g=race.goals;return Math.floor(Math.min(100,((g.kills.current/g.kills.target)+(g.gold.current/g.gold.target)+((g.level.current-1)/Math.max(1,g.level.target-1))+(g.zones.current/g.zones.target))/4*100));}
 function renderLeaderboard(){const scores=[{name:playerName,score:calcRaceScore(),you:true},...race.rivals.map(r=>({name:r.name,score:Math.floor(r.prog*100),you:false}))].sort((a,b)=>b.score-a.score);const lb=document.getElementById('race-lb-slots');if(!lb)return;lb.innerHTML='';scores.forEach((s,i)=>{const d=document.createElement('div');d.className='lb-player'+(s.you?' you':'')+(i===0?' first':'');d.textContent=(i===0?'👑 ':'')+s.name+' '+s.score+'%';lb.appendChild(d);});}
-function raceWon(){const elapsed=Date.now()-race.startTime;const timeStr=Math.floor(elapsed/60000)+':'+String(Math.floor((elapsed%60000)/1000)).padStart(2,'0');race.active=false;race.wins++;if(!race.bestTime||elapsed<race.bestTime)race.bestTime=elapsed;player.honor+=200;player.coins+=150;updateHUD();document.getElementById('race-panel').style.display='none';document.getElementById('sb-wins').textContent=race.wins;document.getElementById('sb-best').textContent=timeStr;document.getElementById('sb-honor').textContent=player.honor;addLog(`🏆 <em>¡CARRERA GANADA!</em> ${timeStr} · +200 honor · +150🪙`,'bright');notify('🏆 ¡GANASTE! +200 honor +150🪙');spawnParts(canvas.width/2,canvas.height/2,'#d0a020',30);setTimeout(()=>{notify('⚡ Nueva carrera en 30s...');setTimeout(startRace,30000);},5000);}
+function raceWon(){const elapsed=Date.now()-race.startTime;const timeStr=Math.floor(elapsed/60000)+':'+String(Math.floor((elapsed%60000)/1000)).padStart(2,'0');race.active=false;race.wins++;if(!race.bestTime||elapsed<race.bestTime)race.bestTime=elapsed;player.honor+=200;player.coins+=150;updateHUD();document.getElementById('race-panel').style.display='none';document.getElementById('sb-wins').textContent=race.wins;document.getElementById('sb-best').textContent=timeStr;document.getElementById('sb-honor').textContent=player.honor;addLog(`🏆 <em>¡CARRERA GANADA!</em> ${timeStr} · +200 honor · +150🪙`,'bright');notify('🏆 ¡GANASTE! +200 honor +150🪙');Sound.sfx('raceWin');spawnParts(canvas.width/2,canvas.height/2,'#d0a020',30);setTimeout(()=>{notify('⚡ Nueva carrera en 30s...');setTimeout(startRace,30000);},5000);}
 function raceFailed(){race.active=false;document.getElementById('race-panel').style.display='none';addLog('⏰ <em>Tiempo agotado.</em>','red');notify('⏰ Tiempo agotado! Nueva carrera en 30s...');setTimeout(startRace,30000);}
 setInterval(()=>{if(race.active){updateRaceUI();const sb=document.getElementById('sb-race');if(sb)sb.textContent='ACTIVA ⚡';}},1000);
 
@@ -1464,8 +1516,8 @@ function render(){
   const activeMap=getActiveMap();
   for(let y=sy0;y<sy1;y++)for(let x=sx0;x<sx1;x++)drawTile(activeMap[y][x],g.x+x*TILE-cam.x,g.y+y*TILE-cam.y);
   const cx=g.x+g.w/2,cy=g.y+g.h/2;
-  const vg=ctx.createRadialGradient(cx,cy,g.w*.25,cx,cy,g.w*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,activeMapDef.vignetteColor||'rgba(0,0,0,.7)');ctx.fillStyle=vg;ctx.fillRect(g.x,g.y,g.w,g.h);
   const activeMapDef=MAPS[currentZone]||MAPS.aldea;
+  const vg=ctx.createRadialGradient(cx,cy,g.w*.25,cx,cy,g.w*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,activeMapDef.vignetteColor||'rgba(0,0,0,.7)');ctx.fillStyle=vg;ctx.fillRect(g.x,g.y,g.w,g.h);
   const ag=ctx.createRadialGradient(cx,cy,0,cx,cy,activeMapDef.lightRadius||220);
   ag.addColorStop(0,activeMapDef.ambientColor||'rgba(180,120,40,.06)');ag.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=ag;ctx.fillRect(g.x,g.y,g.w,g.h);
@@ -1829,7 +1881,7 @@ function updateGoldenChicken(){
     player.coins += 500;
     player.honor += 50;
     addLog('🐔 <em>¡CAPTURASTE AL POLLO DORADO!</em> +500🪙 +50 honor', 'bright');
-    notify('🐔 ¡POLLO DORADO! +500🪙 +50 honor');
+    notify('🐔 ¡POLLO DORADO! +500🪙 +50 honor');Sound.sfx('chicken');Sound.sfx('coin');
     spawnParts(goldenChicken.wx-cam.x, goldenChicken.wy-cam.y, '#ffd060', 20);
     floatText(goldenChicken.wx-cam.x, goldenChicken.wy-cam.y-40, '🐔 +500🪙!', '#ffd060');
     updateHUD();
@@ -1889,7 +1941,7 @@ function checkScrolls(){
     const dist = Math.hypot(scroll.wx-player.wx, scroll.wy-player.wy);
     if(dist < TILE*1.2){
       scroll.found = true;
-      notify(`📜 ${scroll.text}`);
+      notify(`📜 ${scroll.text}`);Sound.sfx('scroll');
       addLog(`📜 <em>Pergamino encontrado:</em> ${scroll.text}`, 'bright');
       player.honor += 15;
       spawnParts(g.x+scroll.wx-cam.x, g.y+scroll.wy-cam.y, '#c8a96e', 8);
@@ -1905,6 +1957,7 @@ function checkScrolls(){
       relic.found = true;
       addItem(relic.item);
       const it = ITEMS[relic.item];
+      Sound.sfx('scroll');
       notify(`🏺 ¡Reliquia enterrada encontrada! ${it.icon} ${it.name}`);
       addLog(`🏺 <em>Excavaste y encontraste:</em> ${it.icon} ${it.name}!`, 'bright');
       spawnParts(g.x+relic.wx-cam.x, g.y+relic.wy-cam.y, '#c8a96e', 12);
@@ -1952,13 +2005,13 @@ const wanderingMerchant = {
 
 function trySpawnWanderingMerchant(){
   if(wanderingMerchant.active) return;
-  if(Math.random() > 0.0003) return;
+  if(Math.random() > 0.0009) return;
   wanderingMerchant.active = true;
   wanderingMerchant.wx = player.wx + (Math.random()>.5?1:-1)*TILE*10;
   wanderingMerchant.wy = player.wy + (Math.random()-.5)*TILE*8;
   wanderingMerchant.timer = 45000; // 45 seconds
   addLog('🎪 <em>¡Un mercader errante aparece!</em> Busca el ícono 🎪 en el mapa.', 'warn');
-  notify('🎪 ¡Mercader Errante! Tiene ítems únicos. ¡Corre!');
+  notify('🎪 ¡Mercader Errante! Tiene ítems únicos. ¡Corre!');Sound.sfx('scroll');
 }
 
 function updateWanderingMerchant(){
@@ -2098,6 +2151,119 @@ window.addEventListener('keydown', e=>{
   if(e.code==='KeyE') checkScrolls();
 });
 
+// ════════════════════════════════════════════════════
+// AUDIO — módulo Sound (manifiesto editable + fallback WebAudio)
+// ════════════════════════════════════════════════════
+// ▼▼▼ EQUIPO DE AUDIO (Nicolas / Ignacio): SOLO rellenen las rutas de archivo. ▼▼▼
+// MÚSICA por zona. La clave es el "mood" de cada zona (ver MAPS[zona].music).
+// Pueden usar una URL (https://...) o un archivo local (p.ej. 'audio/bosque.mp3').
+// Déjenlo en '' para usar el ambiente sintetizado por defecto (no queda en silencio).
+const MUSIC_TRACKS = { calm:'', dark:'', epic:'', cave:'', boss:'' };
+// EFECTOS de sonido por evento. Mismo criterio: ruta de archivo o '' para el blip por defecto.
+const SFX = { hit:'', crit:'', kill:'', levelup:'', coin:'', heal:'', death:'', raceStart:'', raceWin:'', click:'', chicken:'', scroll:'' };
+// ▲▲▲ Fin de la zona editable. El resto es el motor; no hace falta tocarlo. ▲▲▲
+
+const Sound = (function(){
+  let ctx=null, master=null, musicGain=null, sfxGain=null;
+  let muted = localStorage.getItem('echo_audio_muted')==='1';
+  let vol   = parseFloat(localStorage.getItem('echo_audio_vol')||'0.6');
+  let currentMusicKey=null, musicEl=null, ambientNodes=null;
+
+  function ensure(){
+    if(ctx) return;
+    try{
+      ctx = new (window.AudioContext||window.webkitAudioContext)();
+      master = ctx.createGain(); master.gain.value = muted?0:vol; master.connect(ctx.destination);
+      musicGain = ctx.createGain(); musicGain.gain.value = 0.5; musicGain.connect(master);
+      sfxGain   = ctx.createGain(); sfxGain.gain.value   = 1.0; sfxGain.connect(master);
+    }catch(e){ ctx=null; }
+  }
+  function resume(){ ensure(); if(ctx && ctx.state==='suspended') ctx.resume(); }
+
+  // SFX sintetizado (fallback cuando SFX[type] está vacío)
+  const PRESETS = {
+    hit:      {f:220, f2:120, wave:'square',  dur:0.08, vol:0.22},
+    crit:     {f:520, f2:200, wave:'sawtooth',dur:0.16, vol:0.30},
+    kill:     {f:160, f2:60,  wave:'triangle',dur:0.20, vol:0.28},
+    levelup:  {f:440, f2:880, wave:'square',  dur:0.35, vol:0.28},
+    coin:     {f:880, f2:1320,wave:'square',  dur:0.10, vol:0.20},
+    heal:     {f:330, f2:660, wave:'sine',    dur:0.25, vol:0.24},
+    death:    {f:200, f2:50,  wave:'sawtooth',dur:0.60, vol:0.30},
+    raceStart:{f:300, f2:700, wave:'square',  dur:0.30, vol:0.28},
+    raceWin:  {f:523, f2:1046,wave:'square',  dur:0.50, vol:0.32},
+    click:    {f:600, f2:600, wave:'square',  dur:0.04, vol:0.14},
+    chicken:  {f:1000,f2:1400,wave:'triangle',dur:0.12, vol:0.24},
+    scroll:   {f:700, f2:500, wave:'sine',    dur:0.30, vol:0.20},
+  };
+  function blip(type){
+    if(!ctx) return;
+    const p=PRESETS[type]||PRESETS.click, t=ctx.currentTime;
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.connect(g); g.connect(sfxGain);
+    o.type=p.wave;
+    o.frequency.setValueAtTime(p.f,t);
+    o.frequency.exponentialRampToValueAtTime(Math.max(40,p.f2),t+p.dur);
+    g.gain.setValueAtTime(p.vol,t);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+p.dur);
+    o.start(t); o.stop(t+p.dur+0.02);
+  }
+  function sfx(type){
+    resume(); if(!ctx) return;
+    const url=SFX[type];
+    if(url){ try{ const a=new Audio(url); a.volume=muted?0:vol; a.play().catch(()=>{}); return; }catch(e){} }
+    blip(type);
+  }
+
+  // Música ambiental sintetizada por mood (fallback cuando MUSIC_TRACKS[mood] está vacío)
+  const MOODS = { calm:[196,294], dark:[110,164], epic:[147,220,294], cave:[98,131], boss:[82,123,164] };
+  function stopMusic(){
+    if(ambientNodes){ ambientNodes.forEach(n=>{try{n.stop();}catch(e){}}); ambientNodes=null; }
+    if(musicEl){ try{musicEl.pause();}catch(e){} musicEl=null; }
+  }
+  function ambient(mood){
+    if(!ctx) return;
+    const freqs=MOODS[mood]||MOODS.calm; ambientNodes=[];
+    freqs.forEach((f,i)=>{
+      const o=ctx.createOscillator(), g=ctx.createGain(), lfo=ctx.createOscillator(), lg=ctx.createGain();
+      o.type=(mood==='boss'||mood==='dark')?'sawtooth':'sine';
+      o.frequency.value=f; g.gain.value=0.05/(i+1);
+      lfo.frequency.value=0.07+i*0.03; lg.gain.value=0.02;
+      lfo.connect(lg); lg.connect(g.gain);
+      o.connect(g); g.connect(musicGain);
+      o.start(); lfo.start();
+      ambientNodes.push(o,lfo);
+    });
+  }
+  function zoneMusic(zoneId){
+    resume(); if(!ctx) return;
+    const mood=(typeof MAPS!=='undefined' && MAPS[zoneId] && MAPS[zoneId].music) || 'calm';
+    if(mood===currentMusicKey) return;
+    currentMusicKey=mood; stopMusic();
+    const url=MUSIC_TRACKS[mood];
+    if(url){ try{ musicEl=new Audio(url); musicEl.loop=true; musicEl.volume=muted?0:vol*0.5; musicEl.play().catch(()=>{}); return; }catch(e){} }
+    ambient(mood);
+  }
+
+  function apply(){
+    if(master) master.gain.value=muted?0:vol;
+    if(musicEl) musicEl.volume=muted?0:vol*0.5;
+    localStorage.setItem('echo_audio_muted', muted?'1':'0');
+    localStorage.setItem('echo_audio_vol', String(vol));
+    const b=document.getElementById('audio-toggle'); if(b) b.textContent=muted?'🔇':'🔊';
+  }
+  function toggleMute(){ resume(); muted=!muted; apply(); }
+  function setVolume(v){ vol=Math.max(0,Math.min(1,v)); apply(); }
+
+  // Inicializa el AudioContext con el primer gesto del usuario (política autoplay)
+  ['pointerdown','keydown','touchstart'].forEach(ev=>
+    window.addEventListener(ev,()=>resume(),{once:true}));
+  // Botón de mute en el header
+  (function wireBtn(){ const b=document.getElementById('audio-toggle'); if(b){ b.textContent=muted?'🔇':'🔊'; b.addEventListener('click',toggleMute); } })();
+
+  return { sfx, zoneMusic, toggleMute, setVolume, resume };
+})();
+window.Sound = Sound; // accesible desde consola para pruebas del equipo de audio
+
 function gameInit(){
   if(gameStarted)return;gameStarted=true;
   spawnEnemies();
@@ -2108,6 +2274,7 @@ function gameInit(){
   addLog('💡 WASD·SHIFT·Click=mover · I=inv · M=tienda · P=pausa · F5=guardar','sys');
   addLog('🔍 <em>[E]</em> excavar reliquias · 🐔 Caza el Pollo Dorado · 📜 Busca pergaminos ocultos','sys');
   setTimeout(()=>showZoneFlash(WORLD_ZONES[0]),500);
+  Sound.zoneMusic(currentZone);
   setTimeout(startRace,4000);
   setTimeout(triggerWorldEvent, 30000); // First event after 30s
   setupMobile();
